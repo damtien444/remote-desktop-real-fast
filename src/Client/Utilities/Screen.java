@@ -13,12 +13,20 @@ public class Screen extends Thread{
 
     public Screen() throws AWTException {
         this.robot = new Robot();
-        start();
+//        start();
     }
 
     public BufferedImage takeSnap(){
-        BufferedImage image = this.robot.createScreenCapture(screenRectangle);
-        return image;
+        return this.robot.createScreenCapture(screenRectangle);
+    }
+
+    public BufferedImage getSnap(){
+        try {
+            return bufferedScreen.get(bufferedScreen.size()-1);
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
@@ -31,8 +39,13 @@ public class Screen extends Thread{
         }
 
         while (true){
-            bufferedScreen.remove(0);
-            bufferedScreen.add(takeSnap());
+            try {
+                bufferedScreen.remove(0);
+                bufferedScreen.add(takeSnap());
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
         }
     }
 

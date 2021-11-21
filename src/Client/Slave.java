@@ -8,13 +8,11 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -60,6 +58,9 @@ public class Slave extends Thread {
             DatagramSocket ds = new DatagramSocket();
             Date date = new Date();
             long last = System.currentTimeMillis();
+            ServerSocket serverSocket = new ServerSocket(10000);
+            Socket socket = serverSocket.accept();
+            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
 //            BufferedImage image = ImageIO.read(new File("src/Client/Utilities/screen.png"));
 
 
@@ -68,19 +69,23 @@ public class Slave extends Thread {
             while (true) {
                 try {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+
+
 //                System.out.println("SENT");
 
                     BufferedImage current_screen = robot.createScreenCapture(screenRectangle);
 
-                    ImageIO.write(current_screen, "jpg", baos);
+                    ImageIO.write(current_screen, "jpg", socket.getOutputStream());
 
-                    byte[] bs = baos.toByteArray();
+//                    byte[] bs = baos.toByteArray();
 
 //                    String base64 = Jpg2Base64.encoder(current_screen);
 //                    byte[] bs = base64.getBytes(StandardCharsets.UTF_8);
 
-                    breaksend(bs, ds);
-                    sleep(100);
+//                    breaksend(bs, ds);
+//                    send(bs, dataOutputStream);
+//                    sleep(100);
 
 //                System.out.println("SENT at fps: " + (1000/(System.currentTimeMillis()-last)));
 
@@ -97,6 +102,16 @@ public class Slave extends Thread {
             e.printStackTrace();
         }
 
+    }
+
+    public void send(byte[] bs, DataOutputStream dos){
+        try {
+            dos.write(bs);
+            System.out.println("Send: "+ dos.size());
+            dos.flush();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     public void breaksend(byte[] bs, DatagramSocket ds) throws InterruptedException {
@@ -131,6 +146,7 @@ public class Slave extends Thread {
 
 
                 ds.send(datagramPacket);
+                sleep(0);
 
             } catch (Exception e) {
                 e.printStackTrace();
