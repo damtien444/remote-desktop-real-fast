@@ -17,11 +17,15 @@ public class Initiualize extends JFrame implements Runnable{
     DataOutputStream incomingDos;
     DataInputStream incomingDis;
     DatagramSocket skInScreen;
+    private final Thread thread;
+
+    Slave sendScreen;
 
 
 
     Initiualize() throws InterruptedException {
         innitualizeScreen = new InnitualizeScreen();
+        thread = new Thread(this);
         try {
             skInScreen = new DatagramSocket();
             byte[] data = new byte[1000];
@@ -39,7 +43,8 @@ public class Initiualize extends JFrame implements Runnable{
             innitualizeScreen.setId(idAndPass[0]);
             innitualizeScreen.setPass(idAndPass[1]);
 
-            this.run();
+            // start listening incoming connection
+            this.start();
 
             innitualizeScreen.connect.addActionListener(e -> {
                 System.out.println("Connect to other peer");
@@ -87,22 +92,23 @@ public class Initiualize extends JFrame implements Runnable{
                             Dimension receiveScreen = new Dimension(Integer.parseInt(token1[1]), Integer.parseInt(token1[2]));
                             System.out.println("Nhận thông số màn hình");
 
-//                            new MasterScreen(skInScreen, receiveScreen);
+                            MasterScreen master = new MasterScreen(skInScreen, receiveScreen);
+                            new Thread(master).start();
 
 
-                            while (true) {
-                                DatagramPacket receivePacket = new DatagramPacket(new byte[1024], 1024);
-                                try {
-                                    this.skInScreen.receive(receivePacket);    //receiver udp packet
-
-                                    String udpMsg = new String(receivePacket.getData());   //get data from the received udp packet
-
-                                    System.out.println("Received: " + udpMsg.trim() + ", From: IP " + receivePacket.getAddress().getHostAddress().trim() + " Port " + receivePacket.getPort());
-                                } catch (IOException ex) {
-                                    System.err.println("Error " + ex);
-                                }
-
-                            }
+//                            while (true) {
+//                                DatagramPacket receivePacket = new DatagramPacket(new byte[1024], 1024);
+//                                try {
+//                                    this.skInScreen.receive(receivePacket);    //receiver udp packet
+//
+//                                    String udpMsg = new String(receivePacket.getData());   //get data from the received udp packet
+//
+//                                    System.out.println("Received: " + udpMsg.trim() + ", From: IP " + receivePacket.getAddress().getHostAddress().trim() + " Port " + receivePacket.getPort());
+//                                } catch (IOException ex) {
+//                                    System.err.println("Error " + ex);
+//                                }
+//
+//                            }
 
                             // thực hiện một vòng while kiểm tra nhận
                         }
@@ -153,6 +159,10 @@ public class Initiualize extends JFrame implements Runnable{
 
     }
 
+    public void start(){
+        thread.start();
+    }
+
     public void listenToIncomingConnection(){
         try {
             String msg = this.incomingDis.readUTF();
@@ -166,23 +176,29 @@ public class Initiualize extends JFrame implements Runnable{
                 System.out.println("Địa chỉ UDP của master: "+token[1]+":"+token[2]);
 
 
-                int j = 0;
-                String msg1 = "";
-                while (true) {
-                    msg1 = "I AM slave " + j;
+//                int j = 0;
+//                String msg1 = "";
+//                while (true) {
+//                    msg1 = "I AM slave " + j;
+//
+//                    DatagramPacket sp = new DatagramPacket(msg1.getBytes(), msg1.getBytes().length, InetAddress.getByName(token[1].trim()), Integer.parseInt(token[2].trim()));
+//                    this.skInScreen.send(sp);
+//                    j++;
+//                    try{
+//                        Thread.sleep(2000);
+//                    }catch(Exception e){
+//                        System.err.println("Exception in Thread sleep"+e);
+//                    }
+//
+//                }
 
-                    DatagramPacket sp = new DatagramPacket(msg1.getBytes(), msg1.getBytes().length, InetAddress.getByName(token[1].trim()), Integer.parseInt(token[2].trim()));
-                    this.skInScreen.send(sp);
-                    j++;
-                    try{
-                        Thread.sleep(2000);
-                    }catch(Exception e){
-                        System.err.println("Exception in Thread sleep"+e);
-                    }
+                sendScreen = new Slave(InetAddress.getByName(token[1].trim()), Integer.parseInt(token[2].trim()));
+                sendScreen.sendScreen.start();
+            } else if (token[0].trim().equals("PARTNERDISCONNECT")){
+                // dung gui
+                sendScreen.sendScreen.running = false;
+            } else if (token[0].trim().equals("ACK")){
 
-                }
-
-//                new Slave(InetAddress.getByName(token[1]), Integer.parseInt(token[2]));
             }
 
         } catch (IOException e){

@@ -125,6 +125,8 @@ class XulyClient extends Thread {
     Boolean is_connected;
     Boolean is_busy;
 
+    String partnerID;
+
     public XulyClient(Socket soc, Socket conSoc,DatagramSocket dgSocket, String id, String pass, InetAddress publicUDPAddress, int publicUDPPort, int serverUDPport) {
         this.soc = soc;
         this.conSoc = conSoc;
@@ -192,6 +194,8 @@ class XulyClient extends Thread {
 
                         try {
                             partner.conDos.writeUTF("SEND-SCREEN-TO:"+this.publicUDPAddress.getHostAddress()+":"+this.publicUDPPort);
+                            this.partnerID = partner.id;
+                            partner.partnerID = this.id;
                             System.out.println("Thông báo partner thành công");
                         } catch (IOException e){
                             e.printStackTrace();
@@ -232,15 +236,23 @@ class XulyClient extends Thread {
                     String pass = token[2];
                     System.out.println("ok:"+id+pass);
 
-
                     acceptIncomingConnection(id, pass);
                 } else if (command.trim().equals("ACK")){
 
                 }
+
             }
         } catch (IOException e) {
             System.out.println("User " + id + " disconnected!");
             is_connected = false;
+
+            if(this.partnerID!=null){
+                try {
+                    InitServer.clients.get(this.partnerID).conDos.writeUTF("PARTNERDISCONNECT");
+                } catch (IOException ex) {
+                }
+            }
+
             InitServer.clients.remove(id);
             System.out.println(InitServer.clients.size());
         }

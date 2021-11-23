@@ -6,6 +6,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -20,18 +21,18 @@ public class ReceiveScreen extends Thread{
     Dimension                   screenSize;
     BufferedImage               screen;
 
-    public ReceiveScreen(DatagramSocket skIn){
-
-        this.skIn = skIn;
-        this.portionCordinate = new HashMap<>();
-        this.portionScreen = new HashMap<>();
-        // nhận kích thước
-        initialize();
-        this.portionSize = calculateSmall(this.screenSize);
-        screen = new BufferedImage(this.screenSize.width, this.screenSize.height, BufferedImage.TYPE_INT_RGB);
-        setPortionCoordinate(this.portionSize);
-
-    }
+//    public ReceiveScreen(DatagramSocket skIn){
+//
+//        this.skIn = skIn;
+//        this.portionCordinate = new HashMap<>();
+//        this.portionScreen = new HashMap<>();
+//        // nhận kích thước
+//        initialize();
+//        this.portionSize = calculateSmall(this.screenSize);
+//        screen = new BufferedImage(this.screenSize.width, this.screenSize.height, BufferedImage.TYPE_INT_RGB);
+//        setPortionCoordinate(this.portionSize);
+//
+//    }
 
     public ReceiveScreen(DatagramSocket skIn, Dimension screenSize){
 
@@ -40,6 +41,7 @@ public class ReceiveScreen extends Thread{
         this.portionScreen = new HashMap<>();
         this.screenSize = screenSize;
         // nhận kích thước
+        initialize();
         this.portionSize = calculateSmall(this.screenSize);
         screen = new BufferedImage(this.screenSize.width, this.screenSize.height, BufferedImage.TYPE_INT_RGB);
         setPortionCoordinate(this.portionSize);
@@ -181,13 +183,13 @@ public class ReceiveScreen extends Thread{
             int ind = ByteBuffer.wrap(ind_data).getInt();
             portionScreen.put(ind, ImageIO.read(new ByteArrayInputStream(screen_data)));
 
-//            System.out.println("receive portion: "+ ind);
+            System.out.println("receive portion: "+ ind);
 
             // rebuild hình
+
             updateScreen(portionScreen.get(ind), portionCordinate.get(ind));
 
-        } catch (Exception e){
-            e.printStackTrace();
+        } catch (IOException e){
         }
     }
 
@@ -213,9 +215,9 @@ public class ReceiveScreen extends Thread{
 
 
     public static void main(String[] args) throws SocketException, UnknownHostException {
-        DatagramSocket skIn = new DatagramSocket(CONFIG.PORT_UDP_SOCKET_IN_RECEIVE_SCREEN);
-
-        new ReceiveScreen(skIn).start();
+//        DatagramSocket skIn = new DatagramSocket(CONFIG.PORT_UDP_SOCKET_IN_RECEIVE_SCREEN);
+//
+//        new ReceiveScreen(skIn).start();
 
     }
 

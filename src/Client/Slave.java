@@ -29,7 +29,7 @@ public class Slave {
         try {
             DatagramSocket skOutScreen = new DatagramSocket();
             sendScreen = new SendScreen(skOutScreen, masterAddress, masterPort);
-            sendScreen.start();
+
         } catch (Exception e){
             e.printStackTrace();
             System.out.println("Không thể tạo socket");

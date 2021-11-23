@@ -27,6 +27,7 @@ public class SendScreen extends Thread{
     Map<Integer, Dimension> portionCordinate;
     Map<Integer, BufferedImage> portionScreen;
     List<Integer> changeList;
+    boolean running = false;
 
     public SendScreen(DatagramSocket skOut, InetAddress reAddr, int rePort) throws AWTException {
         this.screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -258,9 +259,8 @@ public class SendScreen extends Thread{
     @Override
     public void run() {
         super.run();
-
-        while (true){
-
+        this.running = true;
+        while (this.running){
             try {
                 updatePortionScreen(this.portionSize);
             } catch (IOException e) {
