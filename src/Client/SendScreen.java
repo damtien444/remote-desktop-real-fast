@@ -21,7 +21,6 @@ public class SendScreen extends Thread{
     public Screen           screen;
     Dimension               screenSize;
     DatagramSocket          skOut;
-    DatagramSocket          skIn;
     InetAddress             reAddr;
     int                     rePort;
     List<Dimension> portionSize;
@@ -29,12 +28,11 @@ public class SendScreen extends Thread{
     Map<Integer, BufferedImage> portionScreen;
     List<Integer> changeList;
 
-    public SendScreen(DatagramSocket skOut, DatagramSocket skIn, InetAddress reAddr, int rePort) throws AWTException {
+    public SendScreen(DatagramSocket skOut, InetAddress reAddr, int rePort) throws AWTException {
         this.screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.screen = new Screen();
         this.reAddr = reAddr;
         this.skOut = skOut;
-        this.skIn = skIn;
         this.rePort = rePort;
         this.portionSize = calculateSmall(this.screenSize);
         this.portionCordinate = new HashMap<>();
@@ -47,6 +45,7 @@ public class SendScreen extends Thread{
 
 //        this.start();
     }
+
 
     public void initialize() {
         try {
@@ -276,8 +275,7 @@ public class SendScreen extends Thread{
 //        SendScreen.calculateSmall(new Dimension(1920, 1080));
 
         DatagramSocket skOut = new DatagramSocket();
-        DatagramSocket skIn = new DatagramSocket(10000);
-        SendScreen gui = new SendScreen(skOut, skIn, InetAddress.getByName("localhost"), 10001);
+        SendScreen gui = new SendScreen(skOut, InetAddress.getByName("localhost"), CONFIG.PORT_UDP_SOCKET_IN_RECEIVE_SCREEN);
         gui.start();
 //
 //        File file1 = new File("C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client\\Utilities\\img.png");

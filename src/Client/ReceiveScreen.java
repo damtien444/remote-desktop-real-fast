@@ -12,25 +12,34 @@ import java.util.*;
 import java.util.List;
 
 public class ReceiveScreen extends Thread{
-    DatagramSocket              skOut;
     DatagramSocket              skIn;
-    InetAddress                 reAddr;
-    int                         rePort;
+
     List<Dimension>             portionSize;
     Map<Integer, Dimension>     portionCordinate;
     Map<Integer, BufferedImage> portionScreen;
     Dimension                   screenSize;
     BufferedImage               screen;
 
-    public ReceiveScreen(DatagramSocket skOut, DatagramSocket skIn, InetAddress reAddr, int rePort){
-        this.skOut = skOut;
+    public ReceiveScreen(DatagramSocket skIn){
+
         this.skIn = skIn;
-        this.reAddr = reAddr;
-        this.rePort = rePort;
         this.portionCordinate = new HashMap<>();
         this.portionScreen = new HashMap<>();
         // nhận kích thước
         initialize();
+        this.portionSize = calculateSmall(this.screenSize);
+        screen = new BufferedImage(this.screenSize.width, this.screenSize.height, BufferedImage.TYPE_INT_RGB);
+        setPortionCoordinate(this.portionSize);
+
+    }
+
+    public ReceiveScreen(DatagramSocket skIn, Dimension screenSize){
+
+        this.skIn = skIn;
+        this.portionCordinate = new HashMap<>();
+        this.portionScreen = new HashMap<>();
+        this.screenSize = screenSize;
+        // nhận kích thước
         this.portionSize = calculateSmall(this.screenSize);
         screen = new BufferedImage(this.screenSize.width, this.screenSize.height, BufferedImage.TYPE_INT_RGB);
         setPortionCoordinate(this.portionSize);
@@ -204,10 +213,9 @@ public class ReceiveScreen extends Thread{
 
 
     public static void main(String[] args) throws SocketException, UnknownHostException {
-        DatagramSocket skOut = new DatagramSocket();
-        DatagramSocket skIn = new DatagramSocket(10001);
+        DatagramSocket skIn = new DatagramSocket(CONFIG.PORT_UDP_SOCKET_IN_RECEIVE_SCREEN);
 
-        new ReceiveScreen(skOut, skIn, InetAddress.getByName("localhost"), 10000).start();
+        new ReceiveScreen(skIn).start();
 
     }
 

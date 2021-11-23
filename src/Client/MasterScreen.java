@@ -2,19 +2,12 @@ package Client;
 
 import Client.Utilities.CONFIG;
 import Client.Utilities.ImagePanel;
-import Client.Utilities.Jpg2Base64;
-import Client.Utilities.Screen;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.net.*;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 public class MasterScreen extends JFrame implements Runnable {
     public ImagePanel panel = new ImagePanel();
@@ -22,36 +15,40 @@ public class MasterScreen extends JFrame implements Runnable {
     ReceiveScreen receiveScreen;
 
 
-    MasterScreen() throws SocketException, UnknownHostException {
+    MasterScreen(Dimension screenSize) throws SocketException, UnknownHostException {
         this.setDefaultCloseOperation(HIDE_ON_CLOSE);
         this.setLayout(new BorderLayout());
 //        this.setUndecorated(true);
-
-
-
         this.add(panel, BorderLayout.CENTER);
-
         panel.setBorder(BorderFactory.createLineBorder(Color.RED));
-
-
         this.setVisible(true);
         this.setExtendedState(JFrame.MAXIMIZED_BOTH);
         masterHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
         masterWidth = Toolkit.getDefaultToolkit().getScreenSize().width;
 
-        DatagramSocket skOut = new DatagramSocket();
-        DatagramSocket skIn = new DatagramSocket(10001);
-        receiveScreen = new ReceiveScreen(skOut, skIn, InetAddress.getByName("localhost"), 10000);
+        DatagramSocket skIn = new DatagramSocket(CONFIG.PORT_UDP_SOCKET_IN_RECEIVE_SCREEN);
+
+        receiveScreen = new ReceiveScreen(skIn, screenSize);
         receiveScreen.start();
-
-
-
-
     }
 
+    MasterScreen(DatagramSocket skIn, Dimension screenSize) {
+        this.setDefaultCloseOperation(HIDE_ON_CLOSE);
+        this.setLayout(new BorderLayout());
+//        this.setUndecorated(true);
+        this.add(panel, BorderLayout.CENTER);
+        panel.setBorder(BorderFactory.createLineBorder(Color.RED));
+        this.setVisible(true);
+        this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        masterHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
+        masterWidth = Toolkit.getDefaultToolkit().getScreenSize().width;
+
+        receiveScreen = new ReceiveScreen(skIn, screenSize);
+        receiveScreen.start();
+    }
 
     public static void main(String[] args) throws SocketException, UnknownHostException {
-        MasterScreen master = new MasterScreen();
+        MasterScreen master = new MasterScreen(Toolkit.getDefaultToolkit().getScreenSize());
         new Thread(master).start();
     }
 
@@ -59,19 +56,9 @@ public class MasterScreen extends JFrame implements Runnable {
     public void run() {
         // nhận màn hình
         try {
-            byte[] data = new byte[1000];
-            byte[] replace = new byte[CONFIG.SAFE_SIZE];
-//            DatagramPacket dp = new DatagramPacket(data, data.length);
-//            DatagramSocket ds = new DatagramSocket(CONFIG.CLIENT_PORT);
-//            Socket soc = new Socket("localhost", 10000);
-//            DataInputStream dataInputStream = new DataInputStream(soc.getInputStream());
 
-            int full_UDP_lenght = 0;
-            int count = 0;
             while (true) {
                 try {
-
-
                     panel.setImage(receiveScreen.getScreen());
 //                    ds.receive(dp);
 //
@@ -148,12 +135,9 @@ public class MasterScreen extends JFrame implements Runnable {
                     // segment ko bao giờ nhận dc => tùy vào độ quan trọng thì request lại
 
 //                    System.out.println("receive something");
-
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
             }
 
         } catch (Exception e) {
