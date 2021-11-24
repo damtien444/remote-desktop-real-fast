@@ -14,6 +14,8 @@ public class MasterScreen extends JFrame implements Runnable {
     int masterHeight, masterWidth;
     ReceiveScreen receiveScreen;
 
+    boolean is_running = false;
+
 
     MasterScreen(Dimension screenSize) throws SocketException, UnknownHostException {
         this.setDefaultCloseOperation(HIDE_ON_CLOSE);
@@ -48,17 +50,21 @@ public class MasterScreen extends JFrame implements Runnable {
     }
 
     public static void main(String[] args) throws SocketException, UnknownHostException {
-        MasterScreen master = new MasterScreen(Toolkit.getDefaultToolkit().getScreenSize());
-        new Thread(master).start();
+//        MasterScreen master = new MasterScreen(Toolkit.getDefaultToolkit().getScreenSize());
+//        new Thread(master).start();
     }
 
     @Override
     public void run() {
         // nhận màn hình
         try {
+            is_running = true;
 
-            while (true) {
+            while (is_running) {
                 try {
+
+
+
                     panel.setImage(receiveScreen.getScreen());
 //                    ds.receive(dp);
 //
@@ -134,7 +140,7 @@ public class MasterScreen extends JFrame implements Runnable {
 
                     // segment ko bao giờ nhận dc => tùy vào độ quan trọng thì request lại
 
-//                    System.out.println("receive something");
+//                    System.out.println("receive something")
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

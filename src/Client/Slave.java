@@ -15,9 +15,11 @@ public class Slave {
     SendScreen sendScreen;
     public Slave(InetAddress masterAddress) {
         try {
+
             DatagramSocket skOutScreen = new DatagramSocket();
             sendScreen = new SendScreen(skOutScreen, masterAddress, CONFIG.PORT_UDP_SOCKET_IN_RECEIVE_SCREEN);
             sendScreen.start();
+
         } catch (Exception e){
             e.printStackTrace();
             System.out.println("Không thể tạo socket");

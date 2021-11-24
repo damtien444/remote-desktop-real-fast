@@ -21,6 +21,8 @@ public class ReceiveScreen extends Thread{
     Dimension                   screenSize;
     BufferedImage               screen;
 
+    boolean is_running;
+
 //    public ReceiveScreen(DatagramSocket skIn){
 //
 //        this.skIn = skIn;
@@ -130,6 +132,7 @@ public class ReceiveScreen extends Thread{
         }
 
         result.add(new Dimension(ratioWidth, ratioHeight));
+
 //        int i = 0;
 //        for (Dimension d: result) {
 //            if (d == null) {
@@ -196,10 +199,9 @@ public class ReceiveScreen extends Thread{
     @Override
     public void run() {
         super.run();
-
-        while (true) {
+        this.is_running = true;
+        while (this.is_running) {
             updatePortion();
-
         }
     }
 

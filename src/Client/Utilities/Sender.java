@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Timer;
@@ -30,6 +31,8 @@ public class Sender {
     Semaphore s;				// guard CS for base, nextSeqNum
     boolean isTransferComplete;	// if receiver has completely received the file
 
+    String partnerReceiverAddress;
+
     // to start or stop the timer
     public void setTimer(boolean isNewTimer){
         if (timer != null) timer.cancel();
@@ -44,13 +47,11 @@ public class Sender {
         private DatagramSocket sk_out;
         private int dst_port;
         private InetAddress dst_addr;
-        private int recv_port;
 
         // OutThread constructor
-        public OutThread(DatagramSocket sk_out, int dst_port, int recv_port) {
+        public OutThread(DatagramSocket sk_out, int dst_port) {
             this.sk_out = sk_out;
             this.dst_port = dst_port;
-            this.recv_port = recv_port;
         }
 
         // constructs the packet prepended with header information
@@ -74,7 +75,7 @@ public class Sender {
         // sending process (updates nextSeqNum)
         public void run(){
             try{
-                dst_addr = InetAddress.getByName("127.0.0.1"); // resolve dst_addr
+                dst_addr = InetAddress.getByName(partnerReceiverAddress); // resolve dst_addr
                 // create byte stream
                 FileInputStream fis = new FileInputStream(new File(path));
 
@@ -210,8 +211,8 @@ public class Sender {
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
-                    sk_in.close();
-                    System.out.println("Sender: sk_in closed!");
+//                    sk_in.close();
+//                    System.out.println("Sender: sk_in closed!");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -236,25 +237,26 @@ public class Sender {
     }// END CLASS Timeout
 
     // sender constructor
-    public Sender(int sk1_dst_port, int sk4_dst_port, String path, String fileName) {
+    public Sender(int sk1_dst_port, DatagramSocket sk4, String partnerReceiverAddress, String path, String fileName) {
         base = 0;
         nextSeqNum = 0;
         this.path = path;
         this.fileName = fileName;
         packetsList = new Vector<byte[]>(win_size);
         isTransferComplete = false;
-        DatagramSocket sk1, sk4;
+        this.partnerReceiverAddress = partnerReceiverAddress;
+        DatagramSocket sk1;
         s = new Semaphore(1);
-        System.out.println("Sender: sk1_dst_port=" + sk1_dst_port + ", sk4_dst_port=" + sk4_dst_port + ", inputFilePath=" + path + ", outputFileName=" + fileName);
+//        System.out.println("Sender: sk1_dst_port=" + sk1_dst_port + ", sk4_dst_port=" + ", inputFilePath=" + path + ", outputFileName=" + fileName);
 
         try {
             // create sockets
             sk1 = new DatagramSocket();				// outgoing channel
-            sk4 = new DatagramSocket(sk4_dst_port);	// incoming channel
+//            sk4 = new DatagramSocket(sk4_dst_port);	// incoming channel
 
             // create threads to process data
             InThread th_in = new InThread(sk4);
-            OutThread th_out = new OutThread(sk1, sk1_dst_port, sk4_dst_port);
+            OutThread th_out = new OutThread(sk1, sk1_dst_port);
             th_in.start();
             th_out.start();
 
@@ -272,14 +274,14 @@ public class Sender {
 //        return destArr;
 //    }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SocketException {
         // parse parameters
 //        if (args.length != 4) {
 //            System.err.println("Usage: java Sender sk1_dst_port, sk4_dst_port, inputFilePath, outputFileName");
 //            System.exit(-1);
 //        }
 //        else new Sender(Integer.parseInt(args[0]), Integer.parseInt(args[1]), args[2], args[3]);
-        String path = "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client\\Utilities\\loading.png";
-        new Sender(10001, 10002, path, "Tesst RUDP.png");
+//        String path = "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client\\Utilities\\loading.png";
+//        new Sender(10001, new DatagramSocket(10002), path, "Tesst RUDP.png");
     }
 }

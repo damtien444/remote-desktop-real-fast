@@ -11,10 +11,6 @@ import java.util.Random;
 
 public class InitServer {
 
-    public static void main(String[] args) {
-        new InitServer();
-    }
-
     static Map<String, XulyClient> clients;
 
     InitServer() {
@@ -24,12 +20,14 @@ public class InitServer {
         try {
             ServerSocket server = new ServerSocket(34567);
             ServerSocket connectionServer = new ServerSocket(34568);
+            ServerSocket punchTCPServer = new ServerSocket(34569);
 
             while (true) {
 
                 // cấp thông tin id và pass cho client
                 Socket soc = server.accept();
                 Socket connectSoc = connectionServer.accept();
+//                Socket tcpPunchSoc = punchTCPServer.accept();
 
 
                 String id = randomNumberStrings(8);
@@ -41,25 +39,33 @@ public class InitServer {
                 DatagramSocket dgSocket = null;
                 int serverUDPSoc = getRandomNumberUsingInts(10000, 65000);
                 boolean not_ok = true;
-                while (not_ok){
+                while (not_ok) {
                     try {
                         dgSocket = new DatagramSocket(serverUDPSoc);
                         not_ok = false;
-                    } catch (SocketException e){
+                    } catch (SocketException e) {
                         not_ok = true;
                     }
                 }
 
-                XulyClient client = new XulyClient(soc,connectSoc, dgSocket, id, randomStrings(8), soc.getInetAddress(), soc.getPort(), serverUDPSoc);
+                XulyClient
+                        client =
+                        new XulyClient(soc, connectSoc, dgSocket, id, randomStrings(8), soc.getInetAddress(), soc.getPort(), serverUDPSoc, punchTCPServer);
+
                 clients.put(id, client);
 
                 String res = client.dis.readUTF();
                 String[] token = res.trim().split(":");
 
+                System.out.println(res);
                 if (token[0].equals("REQUEST")) {
                     client.dos.writeUTF(id + "~~" + client.pass);
                     client.setScreen(Integer.parseInt(token[1]), Integer.parseInt(token[2]));
                 }
+
+                client.skInSenderFilePort = client.getUDPPort("EXCHANGE-UDP-PORT-SENDER-FILE","EXCHANGE-UDP-PORT-SENDER-FILE-OKE");
+                Thread.sleep(10);
+                client.skInReceiverFilePort = client.getUDPPort("EXCHANGE-UDP-PORT-RECEIVER-FILE","EXCHANGE-UDP-PORT-RECEIVER-FILE-OKE");
 
                 client.start();
             }
@@ -69,11 +75,8 @@ public class InitServer {
         }
     }
 
-    public int getRandomNumberUsingInts(int min, int max) {
-        Random random = new Random();
-        return random.ints(min, max)
-                .findFirst()
-                .getAsInt();
+    public static void main(String[] args) {
+        new InitServer();
     }
 
     public static String randomStrings(int length) {
@@ -105,6 +108,13 @@ public class InitServer {
 //        System.out.println(generatedString);
         return generatedString;
     }
+
+    public int getRandomNumberUsingInts(int min, int max) {
+        Random random = new Random();
+        return random.ints(min, max)
+                .findFirst()
+                .getAsInt();
+    }
 }
 
 class XulyClient extends Thread {
@@ -125,9 +135,23 @@ class XulyClient extends Thread {
     Boolean is_connected;
     Boolean is_busy;
 
+    int skInSenderFilePort;
+    int skInReceiverFilePort;
+
     String partnerID;
 
-    public XulyClient(Socket soc, Socket conSoc,DatagramSocket dgSocket, String id, String pass, InetAddress publicUDPAddress, int publicUDPPort, int serverUDPport) {
+    ServerSocket punchTCPServer;
+    Socket tcpPunchSoc;
+    DataInputStream disTCPpunch;
+    DataOutputStream dosTCPpunch;
+
+    String IP;
+    int port_local;
+    int port;
+
+
+
+    public XulyClient(Socket soc, Socket conSoc, DatagramSocket dgSocket, String id, String pass, InetAddress publicUDPAddress, int publicUDPPort, int serverUDPport, ServerSocket punchTCPServer) {
         this.soc = soc;
         this.conSoc = conSoc;
         this.id = id;
@@ -137,12 +161,29 @@ class XulyClient extends Thread {
         this.publicUDPPort = publicUDPPort;
         this.is_busy = false;
         this.serverUDPport = serverUDPport;
+        this.punchTCPServer = punchTCPServer;
+
+//        this.tcpPunchSoc = tcpPunchSoc;
+//
+
 
         try {
+            this.tcpPunchSoc = punchTCPServer.accept();
+            this.IP = ((InetSocketAddress) tcpPunchSoc.getRemoteSocketAddress()).getAddress().getHostAddress().trim();
+            this.port_local = tcpPunchSoc.getPort();
+            this.port = tcpPunchSoc.getLocalPort();
+
+
             this.dis = new DataInputStream(soc.getInputStream());
             this.dos = new DataOutputStream(soc.getOutputStream());
             this.conDis = new DataInputStream(conSoc.getInputStream());
             this.conDos = new DataOutputStream(conSoc.getOutputStream());
+
+
+            this.disTCPpunch = new DataInputStream(tcpPunchSoc.getInputStream());
+            this.dosTCPpunch = new DataOutputStream(tcpPunchSoc.getOutputStream());
+
+            initTCPpunch();
 
             is_connected = true;
         } catch (Exception e) {
@@ -150,12 +191,37 @@ class XulyClient extends Thread {
         }
     }
 
-    public void setScreen(int w, int h){
+    public boolean initTCPpunch() throws IOException {
+        String msg = this.disTCPpunch.readUTF();
+        String[] token = msg.trim().split(":");
+        return token[0].trim().equals("CONFIRM-TCP-PUNCH");
+    }
+
+    public int getUDPPort(String first_token, String confirm_msg) throws IOException {
+        this.dos.writeUTF(first_token+":" + this.serverUDPport);
+        byte[] buf = new byte[1000];
+        DatagramPacket reP = new DatagramPacket(buf, buf.length);
+        boolean accepted = false;
+        while (! accepted) {
+            this.dgSocket.receive(reP);
+            String udpMsg = new String(reP.getData());
+            this.publicUDPAddress = this.soc.getInetAddress();
+            this.publicUDPPort = reP.getPort();
+            if (udpMsg.trim().equals("OKE")) {
+                this.dos.writeUTF(confirm_msg);
+                System.out.println(confirm_msg);
+                accepted = true;
+            }
+        }
+
+        return reP.getPort();
+    }
+
+    public void setScreen(int w, int h) {
         this.screen = new Dimension(w, h);
     }
 
     public void acceptIncomingConnection(String id, String pass) {
-
 
         try {
             if (InitServer.clients.containsKey(id)) {
@@ -164,9 +230,15 @@ class XulyClient extends Thread {
                 if (partner.pass.equals(pass)) {
                     if (! partner.is_busy) {
 
-                        // trao đổi UDP
-                        this.dos.writeUTF("SEND USING UDP IN-SOCKET to:"+ this.serverUDPport);
-
+//                         todo: trao đổi tcp punch
+                        // trao đổi UDP và tcp punch
+                        this.dos.writeUTF("ACCEPT-EXCHANGE:" + this.serverUDPport+":"
+                                +this.IP+":"
+                                +this.port+":"
+                                +this.port_local+":"
+                                +partner.IP+":"
+                                +partner.port+":"
+                                +partner.port_local);
 
                         // NHẬN UDP-in của bên master
                         byte[] buf = new byte[1000];
@@ -178,38 +250,51 @@ class XulyClient extends Thread {
                             this.publicUDPAddress = this.soc.getInetAddress();
                             this.publicUDPPort = reP.getPort();
                             if (udpMsg.trim().equals("OKE")) {
-                                this.dos.writeUTF("EXCHANGE-OKE");
+                                this.dos.writeUTF("EXCHANGE-OKE-1");
                                 System.out.println("NHÂN UDP thành công");
                                 accepted = true;
                             }
                         }
+
+
                         partner.is_busy = true;
                         this.is_busy = true;
-                        System.out.println(this.publicUDPAddress+":"+this.publicUDPPort);
+                        System.out.println(this.publicUDPAddress + ":" + this.publicUDPPort);
                         // chuẩn bị màn hình nhận
 
-                        this.dos.writeUTF("PREPARERECEIVE:"+partner.screen.width+":"+partner.screen.height);
+                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height);
+
 
                         // thông báo incoming connection cho partner
 
+
+
                         try {
-                            partner.conDos.writeUTF("SEND-SCREEN-TO:"+this.publicUDPAddress.getHostAddress()+":"+this.publicUDPPort);
+                            partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort+":"+this.skInReceiverFilePort+":"+this.publicUDPAddress.getHostAddress());
+                            partner.conDos.writeUTF("SEND-SCREEN-TO:" + this.publicUDPAddress.getHostAddress() + ":" + this.publicUDPPort);
                             this.partnerID = partner.id;
                             partner.partnerID = this.id;
                             System.out.println("Thông báo partner thành công");
-                        } catch (IOException e){
+                        } catch (IOException e) {
                             e.printStackTrace();
                             System.out.println("Partner disconnect");
                         }
 
+                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort+":"+partner.skInReceiverFilePort+":"+partner.publicUDPAddress.getHostAddress());
+
+
+
                     } else {
-                        this.dos.writeUTF("PARTNER BUSY!");
+                        this.dos.writeUTF("PARTNER:BUSY");
                     }
                 } else {
-                    this.dos.writeUTF("WRONG PASSWORD");
+                    this.dos.writeUTF("PARTNER:WRONG-PASSWORD");
                 }
 
 
+            } else {
+                // partner khong ton tai
+                this.dos.writeUTF("PARTNER:NOT-AVAILABLE");
             }
         } catch (IOException e) {
             System.out.println("User " + this.id + " disconnected!");
@@ -230,14 +315,13 @@ class XulyClient extends Thread {
             while (true) {
 
                 String command = this.dis.readUTF();
-                if (command.trim().contains("CONNECT TO:")){
+                if (command.trim().contains("CONNECT TO:")) {
                     String[] token = command.split(":");
                     String id = token[1];
                     String pass = token[2];
-                    System.out.println("ok:"+id+pass);
-
+                    System.out.println("ok:" + id + pass);
                     acceptIncomingConnection(id, pass);
-                } else if (command.trim().equals("ACK")){
+                } else if (command.trim().equals("ACK")) {
 
                 }
 
@@ -246,10 +330,11 @@ class XulyClient extends Thread {
             System.out.println("User " + id + " disconnected!");
             is_connected = false;
 
-            if(this.partnerID!=null){
+            if (this.partnerID != null) {
                 try {
                     InitServer.clients.get(this.partnerID).conDos.writeUTF("PARTNERDISCONNECT");
-                } catch (IOException ex) {
+                    InitServer.clients.get(this.partnerID).is_busy = false;
+                } catch (Exception ignored) {
                 }
             }
 
@@ -258,5 +343,19 @@ class XulyClient extends Thread {
         }
     }
 
+//    private void initPunConnection(ServerSocket socketserver){
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    tcpPunchSoc = socketserver.accept();
+//                    disTCPpunch = new DataInputStream(tcpPunchSoc.getInputStream());
+//                    dosTCPpunch = new DataOutputStream(tcpPunchSoc.getOutputStream());
+//                } catch (IOException e){
+//                    e.printStackTrace();
+//                }
+//            }
+//        }).start();
+//    }
 
 }

@@ -16,23 +16,25 @@ public class Receiver {
     static int pkt_size = 1000;
 
     // Receiver constructor
-    public Receiver(int sk2_dst_port, int sk3_dst_port, String path) {
-        DatagramSocket sk2, sk3;
-        System.out.println("Receiver: sk2_dst_port=" + sk2_dst_port + ", " + "sk3_dst_port=" + sk3_dst_port + ".");
+    public Receiver(DatagramSocket sk2, int receiverPort, String partnerSenderAddress, String path) {
+        DatagramSocket sk3;
+//        System.out.println("Receiver: sk2_dst_port="  + ", " + "sk3_dst_port=" + receiverPort + ".");
 
         int prevSeqNum = -1;				// previous sequence number received in-order
         int nextSeqNum = 0;					// next expected sequence number
+
+
         boolean isTransferComplete = false;	// (flag) if transfer is complete
 
         // create sockets
         try {
-            sk2 = new DatagramSocket(sk2_dst_port);	// incoming channel
+            	// incoming channel
             sk3 = new DatagramSocket();				// outgoing channel
             System.out.println("Receiver: Listening");
             try {
                 byte[] in_data = new byte[pkt_size];									// message data in packet
                 DatagramPacket in_pkt = new DatagramPacket(in_data,	in_data.length);	// incoming packet
-                InetAddress dst_addr = InetAddress.getByName("127.0.0.1");
+                InetAddress dst_addr = InetAddress.getByName(partnerSenderAddress);
 
                 FileOutputStream fos = null;
                 // make directory
@@ -61,7 +63,7 @@ public class Receiver {
                             if (in_pkt.getLength() == 12){
                                 byte[] ackPkt = generatePacket(-2);	// construct teardown packet (ack -2)
                                 // send 20 acks in case last ack is not received by Sender (assures Sender teardown)
-                                for (int i=0; i<20; i++) sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, sk3_dst_port));
+                                for (int i=0; i<20; i++) sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
                                 isTransferComplete = true;			// set flag to true
                                 System.out.println("Receiver: All packets received! File Created!");
                                 continue;	// end listener
@@ -69,7 +71,7 @@ public class Receiver {
                             // else send ack
                             else{
                                 byte[] ackPkt = generatePacket(seqNum);
-                                sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, sk3_dst_port));
+                                sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
                                 System.out.println("Receiver: Sent Ack " + seqNum);
                             }
 
@@ -100,7 +102,7 @@ public class Receiver {
                         // if out of order packet received, send duplicate ack
                         else{
                             byte[] ackPkt = generatePacket(prevSeqNum);
-                            sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, sk3_dst_port));
+                            sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
                             System.out.println("Receiver: Sent duplicate Ack " + prevSeqNum);
                         }
                     }
@@ -109,7 +111,7 @@ public class Receiver {
                     else{
                         System.out.println("Receiver: Corrupt packet dropped");
                         byte[] ackPkt = generatePacket(prevSeqNum);
-                        sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, sk3_dst_port));
+                        sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
                         System.out.println("Receiver: Sent duplicate Ack " + prevSeqNum);
                     }
                 }
@@ -118,9 +120,9 @@ public class Receiver {
                 e.printStackTrace();
                 System.exit(-1);
             } finally {
-                sk2.close();
+//                sk2.close();
                 sk3.close();
-                System.out.println("Receiver: sk2 closed!");
+//                System.out.println("Receiver: sk2 closed!");
                 System.out.println("Receiver: sk3 closed!");
             }
         } catch (SocketException e1) {
@@ -150,14 +152,14 @@ public class Receiver {
 //    }
 
     // main function
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SocketException {
         // parse parameters
 //        if (args.length != 3) {
 //            System.err.println("Usage: java Receiver sk2_dst_port, sk3_dst_port, outputFolderPath");
 //            System.exit(-1);
 //        }
 //        else new Receiver(Integer.parseInt(args[0]), Integer.parseInt(args[1]), args[2]);
-        String path = "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client";
-        new Receiver(10001, 10002, path);
+//        String path = "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client";
+//        new Receiver(new DatagramSocket(10001), 10002, path);
     }
 }
