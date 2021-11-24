@@ -54,18 +54,7 @@ public class InitServer {
 
                 clients.put(id, client);
 
-                String res = client.dis.readUTF();
-                String[] token = res.trim().split(":");
 
-                System.out.println(res);
-                if (token[0].equals("REQUEST")) {
-                    client.dos.writeUTF(id + "~~" + client.pass);
-                    client.setScreen(Integer.parseInt(token[1]), Integer.parseInt(token[2]));
-                }
-
-                client.skInSenderFilePort = client.getUDPPort("EXCHANGE-UDP-PORT-SENDER-FILE","EXCHANGE-UDP-PORT-SENDER-FILE-OKE");
-                Thread.sleep(10);
-                client.skInReceiverFilePort = client.getUDPPort("EXCHANGE-UDP-PORT-RECEIVER-FILE","EXCHANGE-UDP-PORT-RECEIVER-FILE-OKE");
 
                 client.start();
             }
@@ -186,6 +175,19 @@ class XulyClient extends Thread {
             initTCPpunch();
 
             is_connected = true;
+
+            String res = this.dis.readUTF();
+            String[] token = res.trim().split(":");
+
+            System.out.println(res);
+            if (token[0].equals("REQUEST")) {
+                this.dos.writeUTF(id + "~~" + this.pass);
+                this.setScreen(Integer.parseInt(token[1]), Integer.parseInt(token[2]));
+            }
+
+            this.skInSenderFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-SENDER-FILE","EXCHANGE-UDP-PORT-SENDER-FILE-OKE");
+            Thread.sleep(10);
+            this.skInReceiverFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVER-FILE","EXCHANGE-UDP-PORT-RECEIVER-FILE-OKE");
         } catch (Exception e) {
 
         }

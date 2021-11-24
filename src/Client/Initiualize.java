@@ -61,6 +61,9 @@ public class Initiualize extends JFrame implements Runnable{
             skInScreen = new DatagramSocket();
             byte[] data = new byte[1000];
 
+//            initSocToServer = new  Socket("123.26.107.217", 34567);
+//            incomingSoc = new Socket("123.26.107.217", 34568);
+//            tcpPunch = new Socket("123.26.107.217", 34569);
             initSocToServer = new  Socket("localhost", 34567);
             incomingSoc = new Socket("localhost", 34568);
             tcpPunch = new Socket("localhost", 34569);
