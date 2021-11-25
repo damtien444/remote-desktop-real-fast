@@ -186,7 +186,7 @@ public class ReceiveScreen extends Thread{
             int ind = ByteBuffer.wrap(ind_data).getInt();
             portionScreen.put(ind, ImageIO.read(new ByteArrayInputStream(screen_data)));
 
-            System.out.println("receive portion: "+ ind);
+//            System.out.println("receive portion: "+ ind);
 
             // rebuild hình
 

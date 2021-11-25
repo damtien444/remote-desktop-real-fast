@@ -5,6 +5,7 @@ import Client.Utilities.Sender;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -29,6 +30,8 @@ public class Initiualize extends JFrame implements Runnable{
 
     DatagramSocket skInReceiveChat;
 
+    DatagramSocket skInSlaveKeyAndMouse;
+
     private final Thread thread;
     Slave sendScreen;
     MasterScreen master;
@@ -44,6 +47,7 @@ public class Initiualize extends JFrame implements Runnable{
     int partner_chat_in_port;
 
     Thread fileReceiverThread;
+    Thread mouseAndKeyReceiver;
 
     Socket tcpPunch;
     DataOutputStream dosTCPpunch;
@@ -52,6 +56,9 @@ public class Initiualize extends JFrame implements Runnable{
     String partner_ip;
     int partner_port;
     int partner_local_port;
+
+    int partner_slave_mouse_key_port;
+
     String my_ip;
     int my_port;
     int my_local_port;
@@ -83,6 +90,7 @@ public class Initiualize extends JFrame implements Runnable{
             this.skInSenderFile = new DatagramSocket();
             this.skInReceiverFile = new DatagramSocket();
             this.skInReceiveChat = new DatagramSocket();
+            this.skInSlaveKeyAndMouse = new DatagramSocket();
 
             this.skOutSenderFile = new DatagramSocket();
             this.SkOutReceiverFile = new DatagramSocket();
@@ -101,6 +109,7 @@ public class Initiualize extends JFrame implements Runnable{
             sendSkInToServer("EXCHANGE-UDP-PORT-SENDER-FILE", "EXCHANGE-UDP-PORT-SENDER-FILE-OKE", skInSenderFile);
             sendSkInToServer("EXCHANGE-UDP-PORT-RECEIVER-FILE", "EXCHANGE-UDP-PORT-RECEIVER-FILE-OKE", skInReceiverFile);
             sendSkInToServer("EXCHANGE-UDP-PORT-RECEIVE-CHAT", "EXCHANGE-UDP-PORT-RECEIVER-CHAT-OKE", skInReceiveChat);
+            sendSkInToServer("EXCHANGE-UDP-PORT-SLAVE-CMD-MOUSE-IN", "EXCHANGE-UDP-PORT-SLAVE-CMD-MOUSE-IN-OKE", skInSlaveKeyAndMouse);
 
             // start listening incoming connection
             this.start();
@@ -171,7 +180,10 @@ public class Initiualize extends JFrame implements Runnable{
                                         new Dimension(Integer.parseInt(token1[1]), Integer.parseInt(token1[2]));
                                 System.out.println("Nhận thông số màn hình");
 
-                                this.master = new MasterScreen(skInScreen, receiveScreen);
+                                this.partner_slave_mouse_key_port = Integer.parseInt(token1[3].trim());
+                                this.partner_address = InetAddress.getByName(token1[4].trim());
+
+                                this.master = new MasterScreen(skInScreen, receiveScreen, partner_address, partner_slave_mouse_key_port);
                                 this.masterThread = new Thread(master);
                                 this.masterThread.start();
 //                            while (true) {
@@ -371,6 +383,59 @@ public class Initiualize extends JFrame implements Runnable{
                 sendScreen = new Slave(InetAddress.getByName(token[1].trim()), Integer.parseInt(token[2].trim()));
                 sendScreen.sendScreen.start();
 
+                // tạo thread nhận chuột và phím -> skInKeyandMouse
+                mouseAndKeyReceiver = new Thread(() -> {
+                    System.out.println("Listnening incoming mouse and key");
+                    byte[] data = new byte[1000];
+                    DatagramPacket reP = new DatagramPacket(data, data.length);
+                    String msg1;
+                    int x,y;
+                    String[] token1;
+
+                    try {
+                        Robot robot = new Robot();
+                        while (true){
+                            try {
+
+                                skInSlaveKeyAndMouse.receive(reP);
+                                msg1 = new String(reP.getData());
+                                System.out.println(msg1);
+                                token1 = msg1.trim().split(":");
+                                if (token1[0].trim().equals("MOUSE-CLICK-AT")){
+                                    x = Integer.parseInt(token1[1].trim());
+                                    y = Integer.parseInt(token1[2].trim());
+
+                                    robot.mouseMove(x, y);
+                                    robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+                                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+                                } else if (token1[0].trim().equals("KEY-PRESS-AT")){
+                                    try {
+                                        robot.keyPress(Integer.parseInt(token1[1].trim()));
+//                                        robot.keyRelease(Integer.parseInt(token1[1].trim()));
+                                        System.out.println(Integer.parseInt(token1[1].trim()));
+                                    } catch (NumberFormatException e){
+
+                                    }
+                                } else if (token1[0].trim().equals("KEY-RELEASE-AT")){
+                                    try {
+//                                        robot.keyPress(Integer.parseInt(token1[1].trim()));
+                                        robot.keyRelease(Integer.parseInt(token1[1].trim()));
+                                        System.out.println(Integer.parseInt(token1[1].trim()));
+                                    } catch (NumberFormatException e){
+
+                                    }
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } catch (AWTException e) {
+                        e.printStackTrace();
+                    }
+
+                });
+                mouseAndKeyReceiver.start();
+
 
             } else if (token[0].trim().equals("PARTNERDISCONNECT")){
 
@@ -385,8 +450,6 @@ public class Initiualize extends JFrame implements Runnable{
 
                     // dừng cập nhật màn hình
                     this.master.is_running = false;
-
-
 
                     // TODO: đóng màn hình chat và file transfer, đóng các kết nối sk
 

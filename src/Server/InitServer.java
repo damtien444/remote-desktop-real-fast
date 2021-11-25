@@ -128,6 +128,7 @@ class XulyClient extends Thread {
     int skInSenderFilePort;
     int skInReceiverFilePort;
     int skInChatPort;
+    int skInSlaveKeyAndMousePort;
 
     String partnerID;
 
@@ -192,6 +193,8 @@ class XulyClient extends Thread {
             this.skInReceiverFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVER-FILE","EXCHANGE-UDP-PORT-RECEIVER-FILE-OKE");
             Thread.sleep(10);
             this.skInChatPort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVE-CHAT", "EXCHANGE-UDP-PORT-RECEIVER-CHAT-OKE");
+            Thread.sleep(10);
+            this.skInSlaveKeyAndMousePort = this.getUDPPort("EXCHANGE-UDP-PORT-SLAVE-CMD-MOUSE-IN", "EXCHANGE-UDP-PORT-SLAVE-CMD-MOUSE-IN-OKE");
 
         } catch (Exception e) {
 
@@ -269,7 +272,8 @@ class XulyClient extends Thread {
                         System.out.println(this.publicUDPAddress + ":" + this.publicUDPPort);
                         // chuẩn bị màn hình nhận
 
-                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height);
+                        System.out.println(partner.IP);
+                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort+":"+partner.publicUDPAddress.getHostAddress());
 
 
                         // thông báo incoming connection cho partner
