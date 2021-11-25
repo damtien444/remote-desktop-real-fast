@@ -193,8 +193,8 @@ public class SendScreen extends Thread{
         int height = imgA.getHeight();
 
         // Loop over every pixel.
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y+=2) {
+            for (int x = 0; x < width; x+=2) {
                 // Compare the pixels for equality.
                 if (imgA.getRGB(x, y) != imgB.getRGB(x, y)) {
                     return false;
@@ -263,6 +263,7 @@ public class SendScreen extends Thread{
         while (this.running){
             try {
                 updatePortionScreen(this.portionSize);
+
             } catch (IOException e) {
                 e.printStackTrace();
             }

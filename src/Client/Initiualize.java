@@ -27,6 +27,8 @@ public class Initiualize extends JFrame implements Runnable{
     DatagramSocket skOutSenderFile;
     DatagramSocket SkOutReceiverFile;
 
+    DatagramSocket skInReceiveChat;
+
     private final Thread thread;
     Slave sendScreen;
     MasterScreen master;
@@ -38,6 +40,8 @@ public class Initiualize extends JFrame implements Runnable{
     int partner_sender_in_port;
     int partner_receiver_in_port;
     InetAddress partner_address;
+
+    int partner_chat_in_port;
 
     Thread fileReceiverThread;
 
@@ -51,6 +55,7 @@ public class Initiualize extends JFrame implements Runnable{
     String my_ip;
     int my_port;
     int my_local_port;
+    ChatAndFileTransfer chatBox;
 
 
 
@@ -66,7 +71,7 @@ public class Initiualize extends JFrame implements Runnable{
 //            tcpPunch = new Socket("123.26.107.217", 34569);
             initSocToServer = new  Socket("localhost", 34567);
             incomingSoc = new Socket("localhost", 34568);
-            tcpPunch = new Socket("localhost", 34569);
+//            tcpPunch = new Socket("localhost", 34569);
 
             this.incomingDis = new DataInputStream(incomingSoc.getInputStream());
             this.incomingDos = new DataOutputStream(incomingSoc.getOutputStream());
@@ -77,15 +82,16 @@ public class Initiualize extends JFrame implements Runnable{
 
             this.skInSenderFile = new DatagramSocket();
             this.skInReceiverFile = new DatagramSocket();
+            this.skInReceiveChat = new DatagramSocket();
 
             this.skOutSenderFile = new DatagramSocket();
             this.SkOutReceiverFile = new DatagramSocket();
 
-            this.disTCPpunch = new DataInputStream(tcpPunch.getInputStream());
-            this.dosTCPpunch = new DataOutputStream(tcpPunch.getOutputStream());
+//            this.disTCPpunch = new DataInputStream(tcpPunch.getInputStream());
+//            this.dosTCPpunch = new DataOutputStream(tcpPunch.getOutputStream());
 
             // gửi cònfirm tcp punch
-            this.dosTCPpunch.writeUTF("CONFIRM-TCP-PUNCH:START");
+//            this.dosTCPpunch.writeUTF("CONFIRM-TCP-PUNCH:START");
 
 
             String[] idAndPass = requestIDandPass(dos, dis);
@@ -94,7 +100,7 @@ public class Initiualize extends JFrame implements Runnable{
 
             sendSkInToServer("EXCHANGE-UDP-PORT-SENDER-FILE", "EXCHANGE-UDP-PORT-SENDER-FILE-OKE", skInSenderFile);
             sendSkInToServer("EXCHANGE-UDP-PORT-RECEIVER-FILE", "EXCHANGE-UDP-PORT-RECEIVER-FILE-OKE", skInReceiverFile);
-
+            sendSkInToServer("EXCHANGE-UDP-PORT-RECEIVE-CHAT", "EXCHANGE-UDP-PORT-RECEIVER-CHAT-OKE", skInReceiveChat);
 
             // start listening incoming connection
             this.start();
@@ -192,17 +198,16 @@ public class Initiualize extends JFrame implements Runnable{
                                 this.partner_sender_in_port = Integer.parseInt(token2[1].trim());
                                 this.partner_receiver_in_port = Integer.parseInt(token2[2].trim());
                                 this.partner_address = InetAddress.getByName(token2[3].trim());
+                                this.partner_chat_in_port = Integer.parseInt(token2[4].trim());
                                 System.out.println("partner address: "+token2[3].trim()+":"+partner_sender_in_port+":"+partner_receiver_in_port);
                             }
 
-                            // todo: gửi thử sử dụng TCP hole
-
-
-
-
                             // TODO: khởi động màn hình chat và file transfer của master
+                            System.out.println(msg);
 
-
+                            chatBox =  new ChatAndFileTransfer(this.skInSenderFile, this.skInReceiverFile, this.partner_address, this.partner_sender_in_port,
+                                    this.partner_receiver_in_port, this.skInReceiveChat, this.partner_chat_in_port, "Master");
+                            new Thread(chatBox).start();
 
 //                            String path = "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client\\Utilities\\screen.png";
 //                            this.fileSender = new Sender(this.partner_receiver_in_port, skInSenderFile, this.partner_address.getHostAddress(),path,"sended-through-UDP.png");
@@ -304,18 +309,22 @@ public class Initiualize extends JFrame implements Runnable{
             while (! accept) {
                 DatagramPacket
                         seP =
-                        new DatagramPacket("OKE".getBytes(), "OKE".length(), serverUDPaddress, serverUDPport);
+                        new DatagramPacket("OKE".getBytes(), "OKE".length(), serverUDPaddress, 40000);
 
                 // su dung them soc
                 socIn.send(seP);
-                System.out.println("send success");
 
                 try {
+                    initSocToServer.setSoTimeout(1000);
                     msg = dis.readUTF();
                     if (msg.trim().equals(confirm_msg)) {
                         System.out.println(confirm_msg);
                         accept = true;
+                        initSocToServer.setSoTimeout(5000);
+                        System.out.println("send success");
                     }
+
+
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -352,7 +361,6 @@ public class Initiualize extends JFrame implements Runnable{
             String[] token = msg.trim().split(":");
 
 
-
             if (token[0].trim().equals("SEND-SCREEN-TO")){
 
                 // dùng udp gửi đến master thử
@@ -365,8 +373,11 @@ public class Initiualize extends JFrame implements Runnable{
 
 
             } else if (token[0].trim().equals("PARTNERDISCONNECT")){
+
+                JOptionPane.showMessageDialog(null, "PARTNER IS DISCONNECTED!");
                 // dung gui
                 if (sendScreen!=null)  sendScreen.sendScreen.running = false;
+
                 if (masterThread !=null) {
 
                     // dừng chờ nhận màn hình
@@ -375,24 +386,40 @@ public class Initiualize extends JFrame implements Runnable{
                     // dừng cập nhật màn hình
                     this.master.is_running = false;
 
+
+
                     // TODO: đóng màn hình chat và file transfer, đóng các kết nối sk
 
                     this.master.dispose();
 
                     // đóng màn hình nhận và quay trở lại
                 }
+
+                if (chatBox.is_running_chat){
+
+                    chatBox.is_running_chat = false;
+
+                    chatBox.dispose();
+                }
             } else if (token[0].trim().equals("MASTER-IN-PORT")){
                 this.partner_sender_in_port = Integer.parseInt(token[1].trim());
                 this.partner_receiver_in_port = Integer.parseInt(token[2].trim());
                 this.partner_address = InetAddress.getByName(token[3].trim());
+                this.partner_chat_in_port = Integer.parseInt(token[4].trim());
+
+                System.out.println(msg);
+
+                chatBox = new ChatAndFileTransfer(this.skInSenderFile, this.skInReceiverFile, this.partner_address, this.partner_sender_in_port, this.partner_receiver_in_port,
+                        this.skInReceiveChat, this.partner_chat_in_port, "Slave");
+                new Thread(chatBox).start();
 
                 // TODO: khởi động màn hình chat và file transfer
 
-                String path = "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client";
-                fileReceiverThread = new Thread(()->{
-                    this.fileReceiver = new Receiver(this.skInReceiverFile, partner_sender_in_port, partner_address.getHostAddress().trim(), path);
-                });
-                fileReceiverThread.start();
+//                String path = "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client";
+//                fileReceiverThread = new Thread(()->{
+//                    this.fileReceiver = new Receiver(this.skInReceiverFile, partner_sender_in_port, partner_address.getHostAddress().trim(), path);
+//                });
+//                fileReceiverThread.start();
 
                 // kiểm tra nhận port từ sender
                 // kiểm tra gửi đến sender

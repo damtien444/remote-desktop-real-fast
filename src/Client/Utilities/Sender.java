@@ -18,7 +18,7 @@ import static Client.Utilities.Utilities.copyOfRange;
 
 // The following implementation uses the Go-Back-N protocol
 public class Sender {
-    static int data_size = 988;			// (checksum:8, seqNum:4, data<=988) Bytes : 1000 Bytes total
+    static int data_size = CONFIG.SAFE_SIZE-12;			// (checksum:8, seqNum:4, data<=988) Bytes : 1000 Bytes total
     static int win_size = 10;
     static int timeoutVal = 300;		// 300ms until timeout
 
@@ -29,9 +29,9 @@ public class Sender {
     Vector<byte[]> packetsList;	// list of generated packets
     Timer timer;				// for timeouts
     Semaphore s;				// guard CS for base, nextSeqNum
-    boolean isTransferComplete;	// if receiver has completely received the file
+    public boolean isTransferComplete;	// if receiver has completely received the file
 
-    String partnerReceiverAddress;
+    InetAddress partnerReceiverAddress;
 
     // to start or stop the timer
     public void setTimer(boolean isNewTimer){
@@ -75,7 +75,7 @@ public class Sender {
         // sending process (updates nextSeqNum)
         public void run(){
             try{
-                dst_addr = InetAddress.getByName(partnerReceiverAddress); // resolve dst_addr
+                dst_addr = partnerReceiverAddress; // resolve dst_addr
                 // create byte stream
                 FileInputStream fis = new FileInputStream(new File(path));
 
@@ -237,7 +237,7 @@ public class Sender {
     }// END CLASS Timeout
 
     // sender constructor
-    public Sender(int sk1_dst_port, DatagramSocket sk4, String partnerReceiverAddress, String path, String fileName) {
+    public Sender(int sk1_dst_port, DatagramSocket sk4, InetAddress partnerReceiverAddress, String path, String fileName) {
         base = 0;
         nextSeqNum = 0;
         this.path = path;

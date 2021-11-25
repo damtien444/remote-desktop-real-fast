@@ -13,10 +13,16 @@ import java.util.zip.CRC32;
 import static Client.Utilities.Utilities.copyOfRange;
 
 public class Receiver {
-    static int pkt_size = 1000;
+    static int pkt_size = CONFIG.SAFE_SIZE;
+
+    public boolean is_done = false;
+    public boolean receiving_something = false;
+    public boolean isTransferComplete;
+
 
     // Receiver constructor
-    public Receiver(DatagramSocket sk2, int receiverPort, String partnerSenderAddress, String path) {
+    public void createReceiver(DatagramSocket sk2, int receiverPort, InetAddress partnerSenderAddress, String path) {
+
         DatagramSocket sk3;
 //        System.out.println("Receiver: sk2_dst_port="  + ", " + "sk3_dst_port=" + receiverPort + ".");
 
@@ -24,7 +30,7 @@ public class Receiver {
         int nextSeqNum = 0;					// next expected sequence number
 
 
-        boolean isTransferComplete = false;	// (flag) if transfer is complete
+        isTransferComplete = false;	// (flag) if transfer is complete
 
         // create sockets
         try {
@@ -34,7 +40,7 @@ public class Receiver {
             try {
                 byte[] in_data = new byte[pkt_size];									// message data in packet
                 DatagramPacket in_pkt = new DatagramPacket(in_data,	in_data.length);	// incoming packet
-                InetAddress dst_addr = InetAddress.getByName(partnerSenderAddress);
+                InetAddress dst_addr = partnerSenderAddress;
 
                 FileOutputStream fos = null;
                 // make directory
@@ -64,7 +70,8 @@ public class Receiver {
                                 byte[] ackPkt = generatePacket(-2);	// construct teardown packet (ack -2)
                                 // send 20 acks in case last ack is not received by Sender (assures Sender teardown)
                                 for (int i=0; i<20; i++) sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
-                                isTransferComplete = true;			// set flag to true
+                                isTransferComplete = true;// set flag to true
+
                                 System.out.println("Receiver: All packets received! File Created!");
                                 continue;	// end listener
                             }
@@ -80,6 +87,8 @@ public class Receiver {
                                 int fileNameLength = ByteBuffer.wrap(copyOfRange(in_data, 12, 16)).getInt();	// 0-8:checksum, 8-12:seqnum
                                 String fileName = new String(copyOfRange(in_data, 16, 16 + fileNameLength));	// decode file name
                                 System.out.println("Receiver: fileName length: " + fileNameLength + ", fileName:" + fileName);
+
+                                receiving_something = true;
 
                                 // create file
                                 File file = new File(path + fileName);
@@ -124,6 +133,9 @@ public class Receiver {
                 sk3.close();
 //                System.out.println("Receiver: sk2 closed!");
                 System.out.println("Receiver: sk3 closed!");
+
+                receiving_something = false;
+                is_done = true;
             }
         } catch (SocketException e1) {
             e1.printStackTrace();

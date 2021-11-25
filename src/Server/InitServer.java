@@ -20,7 +20,8 @@ public class InitServer {
         try {
             ServerSocket server = new ServerSocket(34567);
             ServerSocket connectionServer = new ServerSocket(34568);
-            ServerSocket punchTCPServer = new ServerSocket(34569);
+//            ServerSocket punchTCPServer = new ServerSocket(34569);
+            DatagramSocket dgSocket = new DatagramSocket(40000);
 
             while (true) {
 
@@ -36,21 +37,21 @@ public class InitServer {
                 }
 
                 // tạo một socketport cho user;
-                DatagramSocket dgSocket = null;
-                int serverUDPSoc = getRandomNumberUsingInts(10000, 65000);
-                boolean not_ok = true;
-                while (not_ok) {
-                    try {
-                        dgSocket = new DatagramSocket(serverUDPSoc);
-                        not_ok = false;
-                    } catch (SocketException e) {
-                        not_ok = true;
-                    }
-                }
+
+//                int serverUDPSoc = getRandomNumberUsingInts(10000, 65000);
+//                boolean not_ok = true;
+//                while (not_ok) {
+//                    try {
+//                        dgSocket = new DatagramSocket(serverUDPSoc);
+//                        not_ok = false;
+//                    } catch (SocketException e) {
+//                        not_ok = true;
+//                    }
+//                }
 
                 XulyClient
                         client =
-                        new XulyClient(soc, connectSoc, dgSocket, id, randomStrings(8), soc.getInetAddress(), soc.getPort(), serverUDPSoc, punchTCPServer);
+                        new XulyClient(soc, connectSoc, dgSocket, id, randomStrings(8), soc.getInetAddress(), soc.getPort(), 40000);
 
                 clients.put(id, client);
 
@@ -126,10 +127,11 @@ class XulyClient extends Thread {
 
     int skInSenderFilePort;
     int skInReceiverFilePort;
+    int skInChatPort;
 
     String partnerID;
 
-    ServerSocket punchTCPServer;
+//    ServerSocket punchTCPServer;
     Socket tcpPunchSoc;
     DataInputStream disTCPpunch;
     DataOutputStream dosTCPpunch;
@@ -140,7 +142,7 @@ class XulyClient extends Thread {
 
 
 
-    public XulyClient(Socket soc, Socket conSoc, DatagramSocket dgSocket, String id, String pass, InetAddress publicUDPAddress, int publicUDPPort, int serverUDPport, ServerSocket punchTCPServer) {
+    public XulyClient(Socket soc, Socket conSoc, DatagramSocket dgSocket, String id, String pass, InetAddress publicUDPAddress, int publicUDPPort, int serverUDPport) {
         this.soc = soc;
         this.conSoc = conSoc;
         this.id = id;
@@ -150,17 +152,17 @@ class XulyClient extends Thread {
         this.publicUDPPort = publicUDPPort;
         this.is_busy = false;
         this.serverUDPport = serverUDPport;
-        this.punchTCPServer = punchTCPServer;
+//        this.punchTCPServer = punchTCPServer;
 
 //        this.tcpPunchSoc = tcpPunchSoc;
 //
 
 
         try {
-            this.tcpPunchSoc = punchTCPServer.accept();
-            this.IP = ((InetSocketAddress) tcpPunchSoc.getRemoteSocketAddress()).getAddress().getHostAddress().trim();
-            this.port_local = tcpPunchSoc.getPort();
-            this.port = tcpPunchSoc.getLocalPort();
+//            this.tcpPunchSoc = punchTCPServer.accept();
+//            this.IP = ((InetSocketAddress) tcpPunchSoc.getRemoteSocketAddress()).getAddress().getHostAddress().trim();
+//            this.port_local = tcpPunchSoc.getPort();
+//            this.port = tcpPunchSoc.getLocalPort();
 
 
             this.dis = new DataInputStream(soc.getInputStream());
@@ -169,10 +171,10 @@ class XulyClient extends Thread {
             this.conDos = new DataOutputStream(conSoc.getOutputStream());
 
 
-            this.disTCPpunch = new DataInputStream(tcpPunchSoc.getInputStream());
-            this.dosTCPpunch = new DataOutputStream(tcpPunchSoc.getOutputStream());
+//            this.disTCPpunch = new DataInputStream(tcpPunchSoc.getInputStream());
+//            this.dosTCPpunch = new DataOutputStream(tcpPunchSoc.getOutputStream());
 
-            initTCPpunch();
+//            initTCPpunch();
 
             is_connected = true;
 
@@ -188,6 +190,9 @@ class XulyClient extends Thread {
             this.skInSenderFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-SENDER-FILE","EXCHANGE-UDP-PORT-SENDER-FILE-OKE");
             Thread.sleep(10);
             this.skInReceiverFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVER-FILE","EXCHANGE-UDP-PORT-RECEIVER-FILE-OKE");
+            Thread.sleep(10);
+            this.skInChatPort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVE-CHAT", "EXCHANGE-UDP-PORT-RECEIVER-CHAT-OKE");
+
         } catch (Exception e) {
 
         }
@@ -272,8 +277,9 @@ class XulyClient extends Thread {
 
 
                         try {
-                            partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort+":"+this.skInReceiverFilePort+":"+this.publicUDPAddress.getHostAddress());
+                            partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort+":"+this.skInReceiverFilePort+":"+this.publicUDPAddress.getHostAddress()+":"+this.skInChatPort);
                             partner.conDos.writeUTF("SEND-SCREEN-TO:" + this.publicUDPAddress.getHostAddress() + ":" + this.publicUDPPort);
+//                            partner.conDos.writeUTF("CHAT-BIND-TO:"+this.skInChatPort);
                             this.partnerID = partner.id;
                             partner.partnerID = this.id;
                             System.out.println("Thông báo partner thành công");
@@ -282,7 +288,8 @@ class XulyClient extends Thread {
                             System.out.println("Partner disconnect");
                         }
 
-                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort+":"+partner.skInReceiverFilePort+":"+partner.publicUDPAddress.getHostAddress());
+                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort+":"+partner.skInReceiverFilePort+":"+partner.publicUDPAddress.getHostAddress()+
+                                ":"+partner.skInChatPort);
 
 
 
