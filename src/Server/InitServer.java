@@ -125,10 +125,10 @@ class XulyClient extends Thread {
     Boolean is_connected;
     Boolean is_busy;
 
-    int skInSenderFilePort;
-    int skInReceiverFilePort;
-    int skInChatPort;
-    int skInSlaveKeyAndMousePort;
+    int[] skInSenderFilePort = new int[2];
+    int[] skInReceiverFilePort = new int[2];
+    int[] skInChatPort  = new int[2];
+    int[] skInSlaveKeyAndMousePort = new int[2];
 
     String partnerID;
 
@@ -140,6 +140,9 @@ class XulyClient extends Thread {
     String IP;
     int port_local;
     int port;
+
+    String local_address;
+    int local_port;
 
 
 
@@ -207,24 +210,30 @@ class XulyClient extends Thread {
         return token[0].trim().equals("CONFIRM-TCP-PUNCH");
     }
 
-    public int getUDPPort(String first_token, String confirm_msg) throws IOException {
+    public int[] getUDPPort(String first_token, String confirm_msg) throws IOException {
         this.dos.writeUTF(first_token+":" + this.serverUDPport);
+        int[] ports = new int[2];
         byte[] buf = new byte[1000];
         DatagramPacket reP = new DatagramPacket(buf, buf.length);
         boolean accepted = false;
         while (! accepted) {
             this.dgSocket.receive(reP);
+            ports[0] = reP.getPort();
             String udpMsg = new String(reP.getData());
             this.publicUDPAddress = this.soc.getInetAddress();
             this.publicUDPPort = reP.getPort();
-            if (udpMsg.trim().equals("OKE")) {
+            String[] token = udpMsg.trim().split(":");
+            if (token[0].trim().equals("OKE")) {
                 this.dos.writeUTF(confirm_msg);
-                System.out.println(confirm_msg);
+                System.out.println(confirm_msg+":"+token[1].trim()+":"+token[2].trim());
+                this.local_address = token[1].trim();
+                this.local_port = Integer.parseInt(token[2].trim());
+                ports[1] = local_port;
                 accepted = true;
             }
         }
 
-        return reP.getPort();
+        return ports;
     }
 
     public void setScreen(int w, int h) {
@@ -273,7 +282,7 @@ class XulyClient extends Thread {
                         // chuẩn bị màn hình nhận
 
                         System.out.println(partner.IP);
-                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort+":"+partner.publicUDPAddress.getHostAddress());
+                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort[0]+":"+partner.publicUDPAddress.getHostAddress());
 
 
                         // thông báo incoming connection cho partner
@@ -281,7 +290,7 @@ class XulyClient extends Thread {
 
 
                         try {
-                            partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort+":"+this.skInReceiverFilePort+":"+this.publicUDPAddress.getHostAddress()+":"+this.skInChatPort);
+                            partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort[0]+":"+this.skInReceiverFilePort[0]+":"+this.publicUDPAddress.getHostAddress()+":"+this.skInChatPort[0]);
                             partner.conDos.writeUTF("SEND-SCREEN-TO:" + this.publicUDPAddress.getHostAddress() + ":" + this.publicUDPPort);
 //                            partner.conDos.writeUTF("CHAT-BIND-TO:"+this.skInChatPort);
                             this.partnerID = partner.id;
@@ -292,8 +301,8 @@ class XulyClient extends Thread {
                             System.out.println("Partner disconnect");
                         }
 
-                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort+":"+partner.skInReceiverFilePort+":"+partner.publicUDPAddress.getHostAddress()+
-                                ":"+partner.skInChatPort);
+                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.publicUDPAddress.getHostAddress()+
+                                ":"+partner.skInChatPort[0]);
 
 
 

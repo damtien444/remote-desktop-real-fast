@@ -64,6 +64,9 @@ public class Initiualize extends JFrame implements Runnable{
     int my_local_port;
     ChatAndFileTransfer chatBox;
 
+    String local_address;
+    int local_port;
+
 
 
     Initiualize() throws InterruptedException {
@@ -182,7 +185,6 @@ public class Initiualize extends JFrame implements Runnable{
 
                                 this.partner_slave_mouse_key_port = Integer.parseInt(token1[3].trim());
                                 this.partner_address = InetAddress.getByName(token1[4].trim());
-
                                 this.master = new MasterScreen(skInScreen, receiveScreen, partner_address, partner_slave_mouse_key_port);
                                 this.masterThread = new Thread(master);
                                 this.masterThread.start();
@@ -319,9 +321,12 @@ public class Initiualize extends JFrame implements Runnable{
 
             boolean accept = false;
             while (! accept) {
+                String local_address = InetAddress.getLocalHost().getHostAddress();
+                int local_port = socIn.getLocalPort();
+                String msg1 = "OKE:"+local_address+":"+local_port;
                 DatagramPacket
                         seP =
-                        new DatagramPacket("OKE".getBytes(), "OKE".length(), serverUDPaddress, 40000);
+                        new DatagramPacket(msg1.getBytes(), msg1.length(), serverUDPaddress, 40000);
 
                 // su dung them soc
                 socIn.send(seP);
