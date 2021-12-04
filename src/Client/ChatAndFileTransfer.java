@@ -122,14 +122,17 @@ public class ChatAndFileTransfer extends JFrame implements Runnable{
                 boolean has_prev = false;
                 while (is_running_chat) {
                     if (fileReceiver == null || fileReceiver.is_done) {
+                        String home = System.getProperty("user.home");
+                        home = home + "\\Downloads";
                         if (has_prev){
-                            addHistory("------File finish receiving------");
+                            addHistory("------File finish receiving at "+home+"------");
                         }
                         fileReceiver = new Receiver();
-                        String
-                                path =
-                                "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client\\ReceiveFile";
-                        fileReceiver.createReceiver(skInReceiver, partner_sender_in_port, partner_address, path);
+
+//                        String
+//                                path =
+//                                "C:\\Users\\damti\\OneDrive - Danang University of Technology\\OneDrive - The University of Technology\\Desktop\\Study\\Doan Coso Nganh Mang\\RemoteDesktop\\src\\Client\\ReceiveFile";
+                        fileReceiver.createReceiver(skInReceiver, partner_sender_in_port, partner_address, home);
                         session = true;
                         fileReceiver.is_done = true;
                         has_prev = true;

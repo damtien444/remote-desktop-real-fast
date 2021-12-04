@@ -240,6 +240,19 @@ class XulyClient extends Thread {
         this.screen = new Dimension(w, h);
     }
 
+    public void swapPort(int[] ports){
+        int temp = ports[0];
+        ports[0] = ports[1];
+        ports[1] = temp;
+    }
+
+    public void swapAllPort(){
+        swapPort(skInSenderFilePort);
+        swapPort(skInReceiverFilePort);
+        swapPort(skInChatPort);
+        swapPort(skInSlaveKeyAndMousePort);
+    }
+
     public void acceptIncomingConnection(String id, String pass) {
 
         try {
@@ -248,6 +261,15 @@ class XulyClient extends Thread {
 
                 if (partner.pass.equals(pass)) {
                     if (! partner.is_busy) {
+                        System.out.println(this.soc.getInetAddress().getHostAddress()+":"+partner.soc.getInetAddress().getHostAddress());
+                        boolean is_swap = false;
+                        if(this.soc.getInetAddress().getHostAddress().equals(partner.soc.getInetAddress().getHostAddress())){
+                            System.out.println("Port Swap");
+                            swapAllPort();
+                            partner.swapAllPort();
+                            is_swap = true;
+                        }
+
 
 //                         todo: trao đổi tcp punch
                         // trao đổi UDP và tcp punch
@@ -304,7 +326,10 @@ class XulyClient extends Thread {
                         this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.publicUDPAddress.getHostAddress()+
                                 ":"+partner.skInChatPort[0]);
 
-
+                        if (is_swap) {
+                            swapAllPort();
+                            partner.swapAllPort();
+                        }
 
                     } else {
                         this.dos.writeUTF("PARTNER:BUSY");
