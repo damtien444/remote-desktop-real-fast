@@ -79,8 +79,8 @@ public class Initiualize extends JFrame implements Runnable{
 //            initSocToServer = new  Socket("123.26.107.217", 34567);
 //            incomingSoc = new Socket("123.26.107.217", 34568);
 //            tcpPunch = new Socket("123.26.107.217", 34569);
-            initSocToServer = new  Socket("localhost", 34567);
-            incomingSoc = new Socket("localhost", 34568);
+            initSocToServer = new  Socket("123.19.99.116", 34567);
+            incomingSoc = new Socket("123.19.99.116", 34568);
 //            tcpPunch = new Socket("localhost", 34569);
 
             this.incomingDis = new DataInputStream(incomingSoc.getInputStream());
@@ -147,6 +147,7 @@ public class Initiualize extends JFrame implements Runnable{
                             this.partner_port = Integer.parseInt(token[6].trim());
                             this.partner_local_port = Integer.parseInt(token[7].trim());
 
+                            System.out.println(msg);
                             boolean accept = false;
                             while (! accept) {
                                 DatagramPacket

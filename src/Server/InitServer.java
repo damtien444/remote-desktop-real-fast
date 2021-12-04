@@ -137,7 +137,7 @@ class XulyClient extends Thread {
     DataInputStream disTCPpunch;
     DataOutputStream dosTCPpunch;
 
-    String IP;
+    String[] IP;
     int port_local;
     int port;
 
@@ -221,12 +221,14 @@ class XulyClient extends Thread {
             ports[0] = reP.getPort();
             String udpMsg = new String(reP.getData());
             this.publicUDPAddress = this.soc.getInetAddress();
+            this.IP[0] = this.soc.getInetAddress().getHostAddress();
             this.publicUDPPort = reP.getPort();
             String[] token = udpMsg.trim().split(":");
             if (token[0].trim().equals("OKE")) {
                 this.dos.writeUTF(confirm_msg);
                 System.out.println(confirm_msg+":"+token[1].trim()+":"+token[2].trim());
                 this.local_address = token[1].trim();
+                this.IP[1] = this.local_address;
                 this.local_port = Integer.parseInt(token[2].trim());
                 ports[1] = local_port;
                 accepted = true;
@@ -246,11 +248,18 @@ class XulyClient extends Thread {
         ports[1] = temp;
     }
 
+    public void swapAddress(){
+        String tmp = IP[0];
+        IP[0] = IP[1];
+        IP[1] = tmp;
+    }
+
     public void swapAllPort(){
         swapPort(skInSenderFilePort);
         swapPort(skInReceiverFilePort);
         swapPort(skInChatPort);
         swapPort(skInSlaveKeyAndMousePort);
+        swapAddress();
     }
 
     public void acceptIncomingConnection(String id, String pass) {
@@ -274,10 +283,10 @@ class XulyClient extends Thread {
 //                         todo: trao đổi tcp punch
                         // trao đổi UDP và tcp punch
                         this.dos.writeUTF("ACCEPT-EXCHANGE:" + this.serverUDPport+":"
-                                +this.IP+":"
+                                +this.IP[0]+":"
                                 +this.port+":"
                                 +this.port_local+":"
-                                +partner.IP+":"
+                                +partner.IP[0]+":"
                                 +partner.port+":"
                                 +partner.port_local);
 
@@ -303,7 +312,7 @@ class XulyClient extends Thread {
                         System.out.println(this.publicUDPAddress + ":" + this.publicUDPPort);
                         // chuẩn bị màn hình nhận
 
-                        System.out.println(partner.IP);
+                        System.out.println(partner.IP[0]);
                         this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort[0]+":"+partner.publicUDPAddress.getHostAddress());
 
 
