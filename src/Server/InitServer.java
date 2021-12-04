@@ -138,7 +138,7 @@ class XulyClient extends Thread {
     DataInputStream disTCPpunch;
     DataOutputStream dosTCPpunch;
 
-    String[] IP;
+    String[] IP = new String[2];
     int port_local;
     int port;
 
@@ -240,6 +240,8 @@ class XulyClient extends Thread {
                 ports[1] = local_port;
                 accepted = true;
             }
+
+
         }
 
         return ports;
@@ -280,7 +282,7 @@ class XulyClient extends Thread {
                         System.out.println(this.soc.getInetAddress().getHostAddress()+":"+partner.soc.getInetAddress().getHostAddress());
                         boolean is_swap = false;
                         if(this.soc.getInetAddress().getHostAddress().equals(partner.soc.getInetAddress().getHostAddress())){
-                            System.out.println("Port Swap");
+                            System.out.println("SAME NAT");
                             swapAllPort();
                             partner.swapAllPort();
                             is_swap = true;
@@ -304,9 +306,15 @@ class XulyClient extends Thread {
                         while (! accepted) {
                             this.dgSocket.receive(reP);
                             String udpMsg = new String(reP.getData());
+                            String[] tok = udpMsg.trim().split(":");
                             this.publicUDPAddress = this.soc.getInetAddress();
                             this.publicUDPPort = reP.getPort();
-                            if (udpMsg.trim().equals("OKE")) {
+                            if (tok[0].trim().equals("OKE")) {
+                                if (is_swap){
+                                    System.out.println("CHECK change endpoint"+ Arrays.toString(tok));
+                                    this.publicUDPAddress = InetAddress.getByName(IP[0]);
+                                    this.publicUDPPort = Integer.parseInt(tok[2]);
+                                }
                                 this.dos.writeUTF("EXCHANGE-OKE-1");
                                 System.out.println("NHÂN UDP thành công");
                                 accepted = true;
@@ -320,7 +328,7 @@ class XulyClient extends Thread {
                         // chuẩn bị màn hình nhận
 
                         System.out.println(partner.IP[0]);
-                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort[0]+":"+partner.publicUDPAddress.getHostAddress());
+                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort[0]+":"+partner.IP[0]);
 
 
                         // thông báo incoming connection cho partner
@@ -328,8 +336,8 @@ class XulyClient extends Thread {
 
 
                         try {
-                            partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort[0]+":"+this.skInReceiverFilePort[0]+":"+this.publicUDPAddress.getHostAddress()+":"+this.skInChatPort[0]);
-                            partner.conDos.writeUTF("SEND-SCREEN-TO:" + this.publicUDPAddress.getHostAddress() + ":" + this.publicUDPPort);
+                            partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort[0]+":"+this.skInReceiverFilePort[0]+":"+this.IP[0]+":"+this.skInChatPort[0]);
+                            partner.conDos.writeUTF("SEND-SCREEN-TO:" + this.IP[0] + ":" + this.publicUDPPort);
 //                            partner.conDos.writeUTF("CHAT-BIND-TO:"+this.skInChatPort);
                             this.partnerID = partner.id;
                             partner.partnerID = this.id;
@@ -339,7 +347,7 @@ class XulyClient extends Thread {
                             System.out.println("Partner disconnect");
                         }
 
-                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.publicUDPAddress.getHostAddress()+
+                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.IP[0]+
                                 ":"+partner.skInChatPort[0]);
 
                         if (is_swap) {

@@ -150,11 +150,16 @@ public class Initiualize extends JFrame implements Runnable{
                             System.out.println(msg);
                             boolean accept = false;
                             while (! accept) {
+
+                                String sendmsg = "OKE:" +"tsts"+":" +this.skInScreen.getLocalPort();
+
                                 DatagramPacket
                                         seP =
-                                        new DatagramPacket("OKE".getBytes(), "OKE".length(), serverUDPaddress, serverUDPport);
+                                        new DatagramPacket(sendmsg.getBytes(),sendmsg.length(), serverUDPaddress, serverUDPport);
 
                                 // su dung them soc
+
+                                System.out.println("LOCAL:"+this.skInScreen.getLocalAddress()+skInScreen.getLocalPort());
 
                                 this.skInScreen.send(seP);
                                 System.out.println("send success");
