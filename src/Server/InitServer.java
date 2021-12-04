@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -219,11 +220,17 @@ class XulyClient extends Thread {
         while (! accepted) {
             this.dgSocket.receive(reP);
             ports[0] = reP.getPort();
+
             String udpMsg = new String(reP.getData());
+            System.out.println(udpMsg);
+
+            String[] token = udpMsg.trim().split(":");
+            System.out.println(token[0].trim().equals("OKE"));
+
             this.publicUDPAddress = this.soc.getInetAddress();
             this.IP[0] = this.soc.getInetAddress().getHostAddress();
             this.publicUDPPort = reP.getPort();
-            String[] token = udpMsg.trim().split(":");
+
             if (token[0].trim().equals("OKE")) {
                 this.dos.writeUTF(confirm_msg);
                 System.out.println(confirm_msg+":"+token[1].trim()+":"+token[2].trim());
