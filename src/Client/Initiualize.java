@@ -76,11 +76,11 @@ public class Initiualize extends JFrame implements Runnable{
             skInScreen = new DatagramSocket();
             byte[] data = new byte[1000];
 
-            initSocToServer = new  Socket("localhost", 34567);
-            incomingSoc = new Socket("localhost", 34568);
+//            initSocToServer = new  Socket("localhost", 34567);
+//            incomingSoc = new Socket("localhost", 34568);
 //            tcpPunch = new Socket("123.26.107.217", 34569);
-//            initSocToServer = new  Socket("123.19.99.116", 34567);
-//            incomingSoc = new Socket("123.19.99.116", 34568);
+            initSocToServer = new  Socket("123.19.99.116", 34567);
+            incomingSoc = new Socket("123.19.99.116", 34568);
 //            tcpPunch = new Socket("localhost", 34569);
 
             this.incomingDis = new DataInputStream(incomingSoc.getInputStream());
@@ -144,6 +144,7 @@ public class Initiualize extends JFrame implements Runnable{
                             this.my_local_port = Integer.parseInt(token[4].trim());
 
                             this.partner_ip = token[5].trim();
+                            System.out.println("partnerIP");
                             this.partner_port = Integer.parseInt(token[6].trim());
                             this.partner_local_port = Integer.parseInt(token[7].trim());
 
@@ -190,6 +191,7 @@ public class Initiualize extends JFrame implements Runnable{
                                 System.out.println("Nhận thông số màn hình");
 
                                 this.partner_slave_mouse_key_port = Integer.parseInt(token1[3].trim());
+
                                 this.partner_address = InetAddress.getByName(token1[4].trim());
                                 this.master = new MasterScreen(skInScreen, receiveScreen, partner_address, partner_slave_mouse_key_port);
                                 this.masterThread = new Thread(master);
@@ -217,7 +219,7 @@ public class Initiualize extends JFrame implements Runnable{
                             if (token2[0].trim().equals("PARTNER-IN-PORTS")){
                                 this.partner_sender_in_port = Integer.parseInt(token2[1].trim());
                                 this.partner_receiver_in_port = Integer.parseInt(token2[2].trim());
-                                this.partner_address = InetAddress.getByName(token2[3].trim());
+//                                this.partner_address = InetAddress.getByName(token2[3].trim());
                                 this.partner_chat_in_port = Integer.parseInt(token2[4].trim());
                                 System.out.println("partner address: "+token2[3].trim()+":"+partner_sender_in_port+":"+partner_receiver_in_port);
                             }
@@ -355,6 +357,24 @@ public class Initiualize extends JFrame implements Runnable{
 
             }
         }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                DatagramPacket
+                        seP =
+                        new DatagramPacket("ACK".getBytes(), "ACK".length(), serverUDPaddress, 40000);
+                while (true){
+                    try {
+                        socIn.send(seP);
+                        Thread.sleep(1000);
+                        System.out.println("ACK-"+first_token+" Sent.");
+                    } catch (IOException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
     public String[] requestIDandPass(DataOutputStream dos, DataInputStream dis) throws IOException {
