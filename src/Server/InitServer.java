@@ -288,7 +288,6 @@ class XulyClient extends Thread {
                             is_swap = true;
                         }
 
-
 //                         todo: trao đổi tcp punch
                         // trao đổi UDP và tcp punch
                         this.dos.writeUTF("ACCEPT-EXCHANGE:" + this.serverUDPport+":"
@@ -329,7 +328,6 @@ class XulyClient extends Thread {
 
                         System.out.println(partner.IP[0]);
                         this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort[0]+":"+partner.IP[0]);
-
 
                         // thông báo incoming connection cho partner
 
