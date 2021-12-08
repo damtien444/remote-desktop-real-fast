@@ -128,8 +128,11 @@ class XulyClient extends Thread {
 
     int[] skInSenderFilePort = new int[2];
     int[] skInReceiverFilePort = new int[2];
+    int[] skOutSenderFilePort = new int[2];
+    int[] skOutReceiverFilePort = new int[2];
     int[] skInChatPort  = new int[2];
     int[] skInSlaveKeyAndMousePort = new int[2];
+    int[] skInScreenReceivePort = new int[2];
 
     String partnerID;
 
@@ -176,10 +179,6 @@ class XulyClient extends Thread {
             this.conDos = new DataOutputStream(conSoc.getOutputStream());
 
 
-//            this.disTCPpunch = new DataInputStream(tcpPunchSoc.getInputStream());
-//            this.dosTCPpunch = new DataOutputStream(tcpPunchSoc.getOutputStream());
-
-//            initTCPpunch();
 
             is_connected = true;
 
@@ -192,14 +191,24 @@ class XulyClient extends Thread {
                 this.setScreen(Integer.parseInt(token[1]), Integer.parseInt(token[2]));
             }
 
-            this.skInSenderFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-SENDER-FILE","EXCHANGE-UDP-PORT-SENDER-FILE-OKE");
+            this.skInSenderFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-SENDER-FILE-IN", "EXCHANGE-UDP-PORT-SENDER-FILE-IN-OKE");
             Thread.sleep(10);
-            this.skInReceiverFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVER-FILE","EXCHANGE-UDP-PORT-RECEIVER-FILE-OKE");
+            this.skInReceiverFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVER-FILE-IN", "EXCHANGE-UDP-PORT-RECEIVER-FILE-IN-OKE");
             Thread.sleep(10);
+
+            this.skOutSenderFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-SENDER-FILE-OUT", "EXCHANGE-UDP-PORT-SENDER-FILE-OUT-OKE");
+            Thread.sleep(10);
+
+            this.skOutReceiverFilePort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVER-FILE-OUT", "EXCHANGE-UDP-PORT-RECEIVER-FILE-OUT-OKE");
+            Thread.sleep(10);
+
             this.skInChatPort = this.getUDPPort("EXCHANGE-UDP-PORT-RECEIVE-CHAT", "EXCHANGE-UDP-PORT-RECEIVER-CHAT-OKE");
             Thread.sleep(10);
-            this.skInSlaveKeyAndMousePort = this.getUDPPort("EXCHANGE-UDP-PORT-SLAVE-CMD-MOUSE-IN", "EXCHANGE-UDP-PORT-SLAVE-CMD-MOUSE-IN-OKE");
 
+            this.skInSlaveKeyAndMousePort = this.getUDPPort("EXCHANGE-UDP-PORT-MOUSE", "EXCHANGE-UDP-PORT-MOUSE-OKE");
+            Thread.sleep(10);
+
+            this.skInScreenReceivePort = this.getUDPPort("EXCHANGE-UDP-PORT-SCREEN", "EXCHANGE-UDP-PORT-SCREEN-OKE");
         } catch (Exception e) {
 
         }
@@ -228,7 +237,7 @@ class XulyClient extends Thread {
             System.out.println(token[0].trim().equals("OKE"));
 
             this.publicUDPAddress = this.soc.getInetAddress();
-            this.IP[0] = this.soc.getInetAddress().getHostAddress();
+            this.IP[0] = reP.getAddress().getHostAddress();
             this.publicUDPPort = reP.getPort();
 
             if (token[0].trim().equals("OKE")) {
@@ -240,7 +249,6 @@ class XulyClient extends Thread {
                 ports[1] = local_port;
                 accepted = true;
             }
-
 
         }
 
@@ -268,6 +276,9 @@ class XulyClient extends Thread {
         swapPort(skInReceiverFilePort);
         swapPort(skInChatPort);
         swapPort(skInSlaveKeyAndMousePort);
+        swapPort(skOutReceiverFilePort);
+        swapPort(skOutSenderFilePort);
+        swapPort(skInScreenReceivePort);
         swapAddress();
     }
 
@@ -290,63 +301,94 @@ class XulyClient extends Thread {
 
 //                         todo: trao đổi tcp punch
                         // trao đổi UDP và tcp punch
-                        this.dos.writeUTF("ACCEPT-EXCHANGE:" + this.serverUDPport+":"
-                                +this.IP[0]+":"
-                                +this.port+":"
-                                +this.port_local+":"
-                                +partner.IP[0]+":"
-                                +partner.port+":"
-                                +partner.port_local);
+                        // TODO gửi địa chỉ, mọi cổng của partner, màn hình cho master
+                        this.dos.writeUTF("ACCEPT-EXCHANGE:"+   partner.IP[0]+":"+
+                                                                    partner.skInSenderFilePort[0]+":"+
+                                                                    partner.skInReceiverFilePort[0]+":"+
+                                                                    partner.skOutSenderFilePort[0]+":"+
+                                                                    partner.skOutReceiverFilePort[0]+":"+
+                                                                    partner.skInChatPort[0]+":"+
+                                                                    partner.skInScreenReceivePort[0]+":"+
+                                                                    partner.skInSlaveKeyAndMousePort[0]+":"+
+                                                                    partner.screen.width+"~"+partner.screen.height);
+                        System.out.println("ACCEPT-EXCHANGE:"+   partner.IP[0]+":"+
+                                partner.skInSenderFilePort[0]+":"+
+                                partner.skInReceiverFilePort[0]+":"+
+                                partner.skOutSenderFilePort[0]+":"+
+                                partner.skOutReceiverFilePort[0]+":"+
+                                partner.skInChatPort[0]+":"+
+                                partner.skInScreenReceivePort[0]+":"+
+                                partner.skInSlaveKeyAndMousePort[0]+":"+
+                                partner.screen.width+"~"+partner.screen.height);
 
+                        // TODO gửi địa chỉ, mọi cổng của partner, cho slave
+                        partner.conDos.writeUTF("SEND-SCREEN-TO:" +this.IP[0]+":"+
+                                                                    this.skInSenderFilePort[0]+":"+
+                                                                    this.skInReceiverFilePort[0]+":"+
+                                                                    this.skOutSenderFilePort[0]+":"+
+                                                                    this.skOutReceiverFilePort[0]+":"+
+                                                                    this.skInChatPort[0]+":"+
+                                                                    this.skInScreenReceivePort[0]+":"+
+                                                                    this.skInSlaveKeyAndMousePort[0]+":"+
+                                                                    this.screen.width+"~"+this.screen.height);
 
-                        // NHẬN UDP-in của bên master
-                        byte[] buf = new byte[1000];
-                        DatagramPacket reP = new DatagramPacket(buf, buf.length);
-                        boolean accepted = false;
-                        while (! accepted) {
-                            this.dgSocket.receive(reP);
-                            String udpMsg = new String(reP.getData());
-                            String[] tok = udpMsg.trim().split(":");
-                            this.publicUDPAddress = InetAddress.getByName(IP[0]);
-                            this.publicUDPPort = reP.getPort();
-                            if (tok[0].trim().equals("OKE")) {
-                                if (is_swap){
-                                    System.out.println("CHECK change endpoint"+ Arrays.toString(tok));
-//                                    this.publicUDPAddress = InetAddress.getByName(IP[0]);
-                                    this.publicUDPPort = Integer.parseInt(tok[2]);
-                                }
-                                this.dos.writeUTF("EXCHANGE-OKE-1");
-                                System.out.println("NHÂN UDP thành công");
-                                accepted = true;
-                            }
-                        }
+                        System.out.println("SEND-SCREEN-TO:" +this.IP[0]+":"+
+                                this.skInSenderFilePort[0]+":"+
+                                this.skInReceiverFilePort[0]+":"+
+                                this.skOutSenderFilePort[0]+":"+
+                                this.skOutReceiverFilePort[0]+":"+
+                                this.skInChatPort[0]+":"+
+                                this.skInScreenReceivePort[0]+":"+
+                                this.skInSlaveKeyAndMousePort[0]+":"+
+                                this.screen.width+"~"+this.screen.height);
 
-
+                        // TODO đánh dấu cả hai đều bận
                         partner.is_busy = true;
                         this.is_busy = true;
-                        System.out.println(this.publicUDPAddress + ":" + this.publicUDPPort);
+                        this.partnerID = partner.id;
+                        partner.partnerID = this.id;
+
+                        System.out.println("heh");
+                        // NHẬN UDP-in của bên master
+//                        byte[] buf = new byte[1000];
+//                        DatagramPacket reP = new DatagramPacket(buf, buf.length);
+//                        boolean accepted = false;
+//                        while (! accepted) {
+//                            this.dgSocket.receive(reP);
+//                            String udpMsg = new String(reP.getData());
+//                            String[] tok = udpMsg.trim().split(":");
+//                            this.publicUDPAddress = InetAddress.getByName(IP[0]);
+//                            this.publicUDPPort = reP.getPort();
+//                            if (tok[0].trim().equals("OKE")) {
+//                                if (is_swap){
+//                                    System.out.println("CHECK change endpoint"+ Arrays.toString(tok));
+////                                    this.publicUDPAddress = InetAddress.getByName(IP[0]);
+//                                    this.publicUDPPort = Integer.parseInt(tok[2]);
+//                                }
+//                                this.dos.writeUTF("EXCHANGE-OKE-1");
+//                                System.out.println("NHÂN UDP thành công");
+//                                accepted = true;
+//                            }
+//                        }
+
                         // chuẩn bị màn hình nhận
 
-                        System.out.println(partner.IP[0]);
-                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort[0]+":"+partner.IP[0]);
-                        // thông báo incoming connection cho partner
-                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.IP[0]+
-                                ":"+partner.skInChatPort[0]);
-
-                        try {
-                            partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort[0]+":"+this.skInReceiverFilePort[0]+":"+this.IP[0]+":"+this.skInChatPort[0]);
-                            partner.conDos.writeUTF("SEND-SCREEN-TO:" + this.IP[0] + ":" + this.publicUDPPort);
-//                            partner.conDos.writeUTF("CHAT-BIND-TO:"+this.skInChatPort);
-                            this.partnerID = partner.id;
-                            partner.partnerID = this.id;
-                            System.out.println("Thông báo partner thành công");
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            System.out.println("Partner disconnect");
-                        }
-
-                        System.out.println("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.IP[0]+
-                                ":"+partner.skInChatPort[0]);
+//                        System.out.println(partner.IP[0]);
+//                        this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort[0]+":"+partner.IP[0]);
+//                        // thông báo incoming connection cho partner
+//                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.IP[0]+
+//                                ":"+partner.skInChatPort[0]);
+//
+//
+//                        partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort[0]+":"+this.skInReceiverFilePort[0]+":"+this.IP[0]+":"+this.skInChatPort[0]+":"+this.skInSlaveKeyAndMousePort[0]);
+//                        partner.conDos.writeUTF("SEND-SCREEN-TO:" + this.IP[0] + ":" + this.publicUDPPort);
+////                            partner.conDos.writeUTF("CHAT-BIND-TO:"+this.skInChatPort);
+//
+//                        System.out.println("Thông báo partner thành công");
+//
+//
+//                        System.out.println("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.IP[0]+
+//                                ":"+partner.skInChatPort[0]);
 
                         if (is_swap) {
                             swapAllPort();

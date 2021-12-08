@@ -43,7 +43,7 @@ public class ReceiveScreen extends Thread{
         this.portionScreen = new HashMap<>();
         this.screenSize = screenSize;
         // nhận kích thước
-        initialize();
+//        initialize();
         this.portionSize = calculateSmall(this.screenSize);
         screen = new BufferedImage(this.screenSize.width, this.screenSize.height, BufferedImage.TYPE_INT_RGB);
         setPortionCoordinate(this.portionSize);
@@ -53,12 +53,12 @@ public class ReceiveScreen extends Thread{
     public boolean initialize(){
             byte[] in_data = new byte[1000];
             DatagramPacket in_pkt = new DatagramPacket(in_data, in_data.length);
-            try {
-                skIn.receive(in_pkt);
-                System.out.println("receive: "+in_pkt.getData().toString());
-            } catch (Exception e){
-                e.printStackTrace();
-            }
+//            try {
+//                skIn.receive(in_pkt);
+//                System.out.println("receive: "+in_pkt.getData().toString());
+//            } catch (Exception e){
+//                e.printStackTrace();
+//            }
             byte[] width_bytes = Arrays.copyOfRange(in_data, 0, 4);
             byte[] height_bytes = Arrays.copyOfRange(in_data, 4, 8);
             int width = ByteBuffer.wrap(width_bytes).getInt();
@@ -180,6 +180,11 @@ public class ReceiveScreen extends Thread{
         DatagramPacket in_pkt = new DatagramPacket(in_data, in_data.length);
         try {
             skIn.receive(in_pkt);
+
+            String raw = new String(in_pkt.getData());
+
+            if (raw.trim().equals("ACK")) return;
+
 //            System.out.println("receive portion");
             byte[] ind_data = Arrays.copyOfRange(in_data, 0, 4);
             byte[] screen_data = Arrays.copyOfRange(in_data, 4, in_pkt.getLength());
@@ -207,8 +212,13 @@ public class ReceiveScreen extends Thread{
 
     public void updateScreen(BufferedImage portion, Dimension coordinate){
         Graphics g = this.screen.getGraphics();
-        g.drawImage(portion, coordinate.width, coordinate.height, null);
-        g.dispose();
+        try {
+            g.drawImage(portion, coordinate.width, coordinate.height, null);
+            g.dispose();
+        } catch (Exception ignored){
+
+        }
+
     }
 
     public BufferedImage getScreen(){

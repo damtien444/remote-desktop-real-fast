@@ -16,7 +16,7 @@ public class MasterScreen extends JFrame implements Runnable {
     ReceiveScreen receiveScreen;
     Dimension contentDimention;
 
-    DatagramSocket skOutMouseKey;
+//    DatagramSocket skOutMouseKey;
 
     boolean is_running = false;
 
@@ -80,7 +80,7 @@ public class MasterScreen extends JFrame implements Runnable {
 
     }
 
-    MasterScreen(DatagramSocket skIn, Dimension screenSize, InetAddress partnerAddress, int partner_slave_mouse_key_port) throws SocketException {
+    MasterScreen(DatagramSocket skIn, DatagramSocket skOutMouseKey,Dimension screenSize, InetAddress partnerAddress, int partner_slave_mouse_key_port) throws SocketException {
         this.setDefaultCloseOperation(HIDE_ON_CLOSE);
         this.setLayout(new BorderLayout());
 //        this.setUndecorated(true);
@@ -92,7 +92,7 @@ public class MasterScreen extends JFrame implements Runnable {
         masterHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
         masterWidth = Toolkit.getDefaultToolkit().getScreenSize().width;
 
-        skOutMouseKey = new DatagramSocket();
+//        skOutMouseKey = new DatagramSocket(master_mouse_key_port);
         receiveScreen = new ReceiveScreen(skIn, screenSize);
         receiveScreen.start();
 

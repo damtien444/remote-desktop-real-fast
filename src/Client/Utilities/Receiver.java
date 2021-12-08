@@ -21,9 +21,9 @@ public class Receiver {
 
 
     // Receiver constructor
-    public void createReceiver(DatagramSocket sk2, int receiverPort, InetAddress partnerSenderAddress, String path) {
+    public void createReceiver(DatagramSocket sk2, DatagramSocket sk3,int receiverPort, InetAddress partnerSenderAddress, String path) {
 
-        DatagramSocket sk3;
+//        DatagramSocket sk3;
 //        System.out.println("Receiver: sk2_dst_port="  + ", " + "sk3_dst_port=" + receiverPort + ".");
 
         int prevSeqNum = -1;				// previous sequence number received in-order
@@ -33,112 +33,112 @@ public class Receiver {
         isTransferComplete = false;	// (flag) if transfer is complete
 
         // create sockets
+        // incoming channel
+//            sk3 = new DatagramSocket();				// outgoing channel
+        System.out.println("Receiver: Listening");
         try {
-            	// incoming channel
-            sk3 = new DatagramSocket();				// outgoing channel
-            System.out.println("Receiver: Listening");
-            try {
-                byte[] in_data = new byte[pkt_size];									// message data in packet
-                DatagramPacket in_pkt = new DatagramPacket(in_data,	in_data.length);	// incoming packet
-                InetAddress dst_addr = partnerSenderAddress;
+            byte[] in_data = new byte[pkt_size];									// message data in packet
+            DatagramPacket in_pkt = new DatagramPacket(in_data,	in_data.length);	// incoming packet
+            InetAddress dst_addr = partnerSenderAddress;
 
-                FileOutputStream fos = null;
-                // make directory
-                path = ((path.substring(path.length()-1)).equals("/"))? path: path + "/";	// append slash if missing
-                File filePath = new File(path);
-                if (!filePath.exists()) filePath.mkdir();
+            FileOutputStream fos = null;
+            // make directory
+            path = ((path.substring(path.length()-1)).equals("/"))? path: path + "/";	// append slash if missing
+            File filePath = new File(path);
+            if (!filePath.exists()) filePath.mkdir();
 
-                // listen on sk2_dst_port
-                while (!isTransferComplete) {
-                    // receive packet
-                    sk2.receive(in_pkt);
+            // listen on sk2_dst_port
+            while (!isTransferComplete) {
+                // receive packet
+                sk2.receive(in_pkt);
 
-                    byte[] received_checksum = copyOfRange(in_data, 0, 8);
-                    CRC32 checksum = new CRC32();
-                    checksum.update(copyOfRange(in_data, 8, in_pkt.getLength()));
-                    byte[] calculated_checksum = ByteBuffer.allocate(8).putLong(checksum.getValue()).array();
+                String raw = new String(in_pkt.getData());
 
-                    // if packet is not corrupted
-                    if (Arrays.equals(received_checksum, calculated_checksum)){
-                        int seqNum = ByteBuffer.wrap(copyOfRange(in_data, 8, 12)).getInt();
-                        System.out.println("Receiver: Received sequence number: " + seqNum);
+                if (raw.trim().equals("ACK")) continue;
 
-                        // if packet received in order
-                        if (seqNum == nextSeqNum){
-                            // if final packet (no data), send teardown ack
-                            if (in_pkt.getLength() == 12){
-                                byte[] ackPkt = generatePacket(-2);	// construct teardown packet (ack -2)
-                                // send 20 acks in case last ack is not received by Sender (assures Sender teardown)
-                                for (int i=0; i<20; i++) sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
-                                isTransferComplete = true;// set flag to true
+                byte[] received_checksum = copyOfRange(in_data, 0, 8);
+                CRC32 checksum = new CRC32();
+                checksum.update(copyOfRange(in_data, 8, in_pkt.getLength()));
+                byte[] calculated_checksum = ByteBuffer.allocate(8).putLong(checksum.getValue()).array();
 
-                                System.out.println("Receiver: All packets received! File Created!");
-                                continue;	// end listener
-                            }
-                            // else send ack
-                            else{
-                                byte[] ackPkt = generatePacket(seqNum);
-                                sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
-                                System.out.println("Receiver: Sent Ack " + seqNum);
-                            }
+                // if packet is not corrupted
+                if (Arrays.equals(received_checksum, calculated_checksum)){
+                    int seqNum = ByteBuffer.wrap(copyOfRange(in_data, 8, 12)).getInt();
+                    System.out.println("Receiver: Received sequence number: " + seqNum);
 
-                            // if first packet of transfer
-                            if (seqNum==0 && prevSeqNum==-1){
-                                int fileNameLength = ByteBuffer.wrap(copyOfRange(in_data, 12, 16)).getInt();	// 0-8:checksum, 8-12:seqnum
-                                String fileName = new String(copyOfRange(in_data, 16, 16 + fileNameLength));	// decode file name
-                                System.out.println("Receiver: fileName length: " + fileNameLength + ", fileName:" + fileName);
+                    // if packet received in order
+                    if (seqNum == nextSeqNum){
+                        // if final packet (no data), send teardown ack
+                        if (in_pkt.getLength() == 12){
+                            byte[] ackPkt = generatePacket(-2);	// construct teardown packet (ack -2)
+                            // send 20 acks in case last ack is not received by Sender (assures Sender teardown)
+                            for (int i=0; i<20; i++) sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
+                            isTransferComplete = true;// set flag to true
 
-                                receiving_something = true;
-
-                                // create file
-                                File file = new File(path + fileName);
-                                if (!file.exists()) file.createNewFile();
-
-                                // init fos
-                                fos = new FileOutputStream(file);
-
-                                // write initial data to fos
-                                fos.write(in_data, 16 + fileNameLength, in_pkt.getLength() - 16 - fileNameLength);
-                            }
-
-                            // else if not first packet write to FileOutputStream
-                            else fos.write(in_data, 12, in_pkt.getLength() - 12);
-
-                            nextSeqNum ++; 			// update nextSeqNum
-                            prevSeqNum = seqNum;	// update prevSeqNum
+                            System.out.println("Receiver: All packets received! File Created!");
+                            continue;	// end listener
                         }
-
-                        // if out of order packet received, send duplicate ack
+                        // else send ack
                         else{
-                            byte[] ackPkt = generatePacket(prevSeqNum);
+                            byte[] ackPkt = generatePacket(seqNum);
                             sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
-                            System.out.println("Receiver: Sent duplicate Ack " + prevSeqNum);
+                            System.out.println("Receiver: Sent Ack " + seqNum);
                         }
+
+                        // if first packet of transfer
+                        if (seqNum==0 && prevSeqNum==-1){
+                            int fileNameLength = ByteBuffer.wrap(copyOfRange(in_data, 12, 16)).getInt();	// 0-8:checksum, 8-12:seqnum
+                            String fileName = new String(copyOfRange(in_data, 16, 16 + fileNameLength));	// decode file name
+                            System.out.println("Receiver: fileName length: " + fileNameLength + ", fileName:" + fileName);
+
+                            receiving_something = true;
+
+                            // create file
+                            File file = new File(path + fileName);
+                            if (!file.exists()) file.createNewFile();
+
+                            // init fos
+                            fos = new FileOutputStream(file);
+
+                            // write initial data to fos
+                            fos.write(in_data, 16 + fileNameLength, in_pkt.getLength() - 16 - fileNameLength);
+                        }
+
+                        // else if not first packet write to FileOutputStream
+                        else fos.write(in_data, 12, in_pkt.getLength() - 12);
+
+                        nextSeqNum ++; 			// update nextSeqNum
+                        prevSeqNum = seqNum;	// update prevSeqNum
                     }
 
-                    // else packet is corrupted
+                    // if out of order packet received, send duplicate ack
                     else{
-                        System.out.println("Receiver: Corrupt packet dropped");
                         byte[] ackPkt = generatePacket(prevSeqNum);
                         sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
                         System.out.println("Receiver: Sent duplicate Ack " + prevSeqNum);
                     }
                 }
-                if (fos != null) fos.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(-1);
-            } finally {
-//                sk2.close();
-                sk3.close();
-//                System.out.println("Receiver: sk2 closed!");
-                System.out.println("Receiver: sk3 closed!");
 
-                receiving_something = false;
-                is_done = true;
+                // else packet is corrupted
+                else{
+                    System.out.println("Receiver: Corrupt packet dropped");
+                    byte[] ackPkt = generatePacket(prevSeqNum);
+                    sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
+                    System.out.println("Receiver: Sent duplicate Ack " + prevSeqNum);
+                }
             }
-        } catch (SocketException e1) {
-            e1.printStackTrace();
+            if (fos != null) fos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
+        } finally {
+////                sk2.close();
+//            sk3.close();
+//                System.out.println("Receiver: sk2 closed!");
+//            System.out.println("Receiver: sk3 closed!");
+
+            receiving_something = false;
+            is_done = true;
         }
     }// END constructor
 

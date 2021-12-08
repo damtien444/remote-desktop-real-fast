@@ -142,9 +142,9 @@ public class Sender {
                     e.printStackTrace();
                 } finally {
                     setTimer(false);	// close timer
-                    sk_out.close();		// close outgoing socket
+//                    sk_out.close();		// close outgoing socket
                     fis.close();		// close FileInputStream
-                    System.out.println("Sender: sk_out closed!");
+//                    System.out.println("Sender: sk_out closed!");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -183,6 +183,11 @@ public class Sender {
                     while (!isTransferComplete) {
 
                         sk_in.receive(in_pkt);
+
+                        String raw = new String(in_pkt.getData());
+
+                        if (raw.trim().equals("ACK")) continue;
+
                         int ackNum = decodePacket(in_data);
                         System.out.println("Sender: Received Ack " + ackNum);
 
@@ -237,7 +242,7 @@ public class Sender {
     }// END CLASS Timeout
 
     // sender constructor
-    public Sender(int sk1_dst_port, DatagramSocket sk4, InetAddress partnerReceiverAddress, String path, String fileName) {
+    public Sender(int sk1_dst_port, DatagramSocket sk4, DatagramSocket sk1,InetAddress partnerReceiverAddress, String path, String fileName) {
         base = 0;
         nextSeqNum = 0;
         this.path = path;
@@ -245,13 +250,13 @@ public class Sender {
         packetsList = new Vector<byte[]>(win_size);
         isTransferComplete = false;
         this.partnerReceiverAddress = partnerReceiverAddress;
-        DatagramSocket sk1;
+//        DatagramSocket sk1;
         s = new Semaphore(1);
 //        System.out.println("Sender: sk1_dst_port=" + sk1_dst_port + ", sk4_dst_port=" + ", inputFilePath=" + path + ", outputFileName=" + fileName);
 
         try {
             // create sockets
-            sk1 = new DatagramSocket();				// outgoing channel
+//            sk1 = new DatagramSocket();				// outgoing channel
 //            sk4 = new DatagramSocket(sk4_dst_port);	// incoming channel
 
             // create threads to process data
