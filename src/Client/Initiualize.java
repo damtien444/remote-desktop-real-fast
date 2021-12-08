@@ -76,11 +76,11 @@ public class Initiualize extends JFrame implements Runnable{
             skInScreen = new DatagramSocket();
             byte[] data = new byte[1000];
 
-//            initSocToServer = new  Socket("localhost", 34567);
-//            incomingSoc = new Socket("localhost", 34568);
+            initSocToServer = new  Socket("localhost", 34567);
+            incomingSoc = new Socket("localhost", 34568);
 //            tcpPunch = new Socket("123.26.107.217", 34569);
-            initSocToServer = new  Socket("123.19.99.116", 34567);
-            incomingSoc = new Socket("123.19.99.116", 34568);
+//            initSocToServer = new  Socket("123.19.99.116", 34567);
+//            incomingSoc = new Socket("123.19.99.116", 34568);
 //            tcpPunch = new Socket("localhost", 34569);
 
             this.incomingDis = new DataInputStream(incomingSoc.getInputStream());
@@ -188,7 +188,7 @@ public class Initiualize extends JFrame implements Runnable{
                                 Dimension
                                         receiveScreen =
                                         new Dimension(Integer.parseInt(token1[1]), Integer.parseInt(token1[2]));
-                                System.out.println("Nhận thông số màn hình");
+                                System.out.println("Nhận thông số màn hình"+msg1);
 
                                 this.partner_slave_mouse_key_port = Integer.parseInt(token1[3].trim());
 
@@ -214,9 +214,10 @@ public class Initiualize extends JFrame implements Runnable{
                             }
 
 
-                            msg = this.dis.readUTF();
-                            String[] token2 = msg.trim().split(":");
-                            if (token2[0].trim().equals("PARTNER-IN-PORTS")){
+                            String msg2 = this.dis.readUTF();
+                            System.out.println("nhận cộng thành công?"+msg2);
+                            String[] token2 = msg2.trim().split(":");
+                            if (token2[0].trim().equals("PARTNERINPORTS")){
                                 this.partner_sender_in_port = Integer.parseInt(token2[1].trim());
                                 this.partner_receiver_in_port = Integer.parseInt(token2[2].trim());
 //                                this.partner_address = InetAddress.getByName(token2[3].trim());
@@ -225,7 +226,7 @@ public class Initiualize extends JFrame implements Runnable{
                             }
 
                             // TODO: khởi động màn hình chat và file transfer của master
-                            System.out.println(msg);
+                            System.out.println(msg2);
 
                             chatBox =  new ChatAndFileTransfer(this.skInSenderFile, this.skInReceiverFile, this.partner_address, this.partner_sender_in_port,
                                     this.partner_receiver_in_port, this.skInReceiveChat, this.partner_chat_in_port, "Master");
@@ -368,7 +369,7 @@ public class Initiualize extends JFrame implements Runnable{
                     try {
                         socIn.send(seP);
                         Thread.sleep(1000);
-                        System.out.println("ACK-"+first_token+" Sent.");
+//                        System.out.println("ACK-"+first_token+" Sent.");
                     } catch (IOException | InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -391,6 +392,8 @@ public class Initiualize extends JFrame implements Runnable{
 
     public static void main(String[] args) throws InterruptedException {
         new Initiualize();
+
+
 
     }
 
@@ -436,6 +439,7 @@ public class Initiualize extends JFrame implements Runnable{
                                 if (token1[0].trim().equals("MOUSE-CLICK-AT")){
                                     x = Integer.parseInt(token1[1].trim());
                                     y = Integer.parseInt(token1[2].trim());
+                                    System.out.println("MOUSE-CLICK-AT"+x+" "+y);
 
                                     robot.mouseMove(x, y);
                                     robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);

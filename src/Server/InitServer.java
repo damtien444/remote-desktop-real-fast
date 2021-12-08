@@ -298,6 +298,7 @@ class XulyClient extends Thread {
                                 +partner.port+":"
                                 +partner.port_local);
 
+
                         // NHẬN UDP-in của bên master
                         byte[] buf = new byte[1000];
                         DatagramPacket reP = new DatagramPacket(buf, buf.length);
@@ -306,12 +307,12 @@ class XulyClient extends Thread {
                             this.dgSocket.receive(reP);
                             String udpMsg = new String(reP.getData());
                             String[] tok = udpMsg.trim().split(":");
-                            this.publicUDPAddress = this.soc.getInetAddress();
+                            this.publicUDPAddress = InetAddress.getByName(IP[0]);
                             this.publicUDPPort = reP.getPort();
                             if (tok[0].trim().equals("OKE")) {
                                 if (is_swap){
                                     System.out.println("CHECK change endpoint"+ Arrays.toString(tok));
-                                    this.publicUDPAddress = InetAddress.getByName(IP[0]);
+//                                    this.publicUDPAddress = InetAddress.getByName(IP[0]);
                                     this.publicUDPPort = Integer.parseInt(tok[2]);
                                 }
                                 this.dos.writeUTF("EXCHANGE-OKE-1");
@@ -328,10 +329,9 @@ class XulyClient extends Thread {
 
                         System.out.println(partner.IP[0]);
                         this.dos.writeUTF("PREPARERECEIVE:" + partner.screen.width + ":" + partner.screen.height+":"+partner.skInSlaveKeyAndMousePort[0]+":"+partner.IP[0]);
-
                         // thông báo incoming connection cho partner
-
-
+                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.IP[0]+
+                                ":"+partner.skInChatPort[0]);
 
                         try {
                             partner.conDos.writeUTF("MASTER-IN-PORT:"+this.skInSenderFilePort[0]+":"+this.skInReceiverFilePort[0]+":"+this.IP[0]+":"+this.skInChatPort[0]);
@@ -345,7 +345,7 @@ class XulyClient extends Thread {
                             System.out.println("Partner disconnect");
                         }
 
-                        this.dos.writeUTF("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.IP[0]+
+                        System.out.println("PARTNER-IN-PORTS:" + partner.skInSenderFilePort[0]+":"+partner.skInReceiverFilePort[0]+":"+partner.IP[0]+
                                 ":"+partner.skInChatPort[0]);
 
                         if (is_swap) {
@@ -367,6 +367,7 @@ class XulyClient extends Thread {
             }
         } catch (IOException e) {
             System.out.println("User " + this.id + " disconnected!");
+            e.printStackTrace();
             is_connected = false;
             InitServer.clients.remove(this.id);
             System.out.println(InitServer.clients.size());
