@@ -54,81 +54,90 @@ loop:       while (!isTransferComplete) {
 
                 String raw = new String(in_pkt.getData());
 
-                if (raw.trim().equals("ACK")) {
+                System.out.println(raw);
+                if (raw.substring(0,3).equals("ACK")) {
                     System.out.println("Ack receive");
                     continue loop;
                 }
 
+                try {
+                    byte[] received_checksum = copyOfRange(in_data, 0, 8);
+                    CRC32 checksum = new CRC32();
+                    checksum.update(copyOfRange(in_data, 8, in_pkt.getLength()));
+                    byte[] calculated_checksum = ByteBuffer.allocate(8).putLong(checksum.getValue()).array();
 
-                byte[] received_checksum = copyOfRange(in_data, 0, 8);
-                CRC32 checksum = new CRC32();
-                checksum.update(copyOfRange(in_data, 8, in_pkt.getLength()));
-                byte[] calculated_checksum = ByteBuffer.allocate(8).putLong(checksum.getValue()).array();
+                    // if packet is not corrupted
+                    if (Arrays.equals(received_checksum, calculated_checksum)) {
+                        int seqNum = ByteBuffer.wrap(copyOfRange(in_data, 8, 12)).getInt();
+                        System.out.println("Receiver: Received sequence number: " + seqNum);
 
-                // if packet is not corrupted
-                if (Arrays.equals(received_checksum, calculated_checksum)){
-                    int seqNum = ByteBuffer.wrap(copyOfRange(in_data, 8, 12)).getInt();
-                    System.out.println("Receiver: Received sequence number: " + seqNum);
+                        // if packet received in order
+                        if (seqNum == nextSeqNum) {
+                            // if final packet (no data), send teardown ack
+                            if (in_pkt.getLength() == 12) {
+                                byte[] ackPkt = generatePacket(- 2);    // construct teardown packet (ack -2)
+                                // send 20 acks in case last ack is not received by Sender (assures Sender teardown)
+                                for (int i = 0; i < 20; i++)
+                                    sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
+                                isTransferComplete = true;// set flag to true
 
-                    // if packet received in order
-                    if (seqNum == nextSeqNum){
-                        // if final packet (no data), send teardown ack
-                        if (in_pkt.getLength() == 12){
-                            byte[] ackPkt = generatePacket(-2);	// construct teardown packet (ack -2)
-                            // send 20 acks in case last ack is not received by Sender (assures Sender teardown)
-                            for (int i=0; i<20; i++) sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
-                            isTransferComplete = true;// set flag to true
+                                System.out.println("Receiver: All packets received! File Created!");
+                                continue;    // end listener
+                            }
+                            // else send ack
+                            else {
+                                byte[] ackPkt = generatePacket(seqNum);
+                                sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
+                                System.out.println("Receiver: Sent Ack " + seqNum);
+                            }
 
-                            System.out.println("Receiver: All packets received! File Created!");
-                            continue;	// end listener
+                            // if first packet of transfer
+                            if (seqNum == 0 && prevSeqNum == - 1) {
+                                int
+                                        fileNameLength =
+                                        ByteBuffer.wrap(copyOfRange(in_data, 12, 16)).getInt();    // 0-8:checksum, 8-12:seqnum
+                                String
+                                        fileName =
+                                        new String(copyOfRange(in_data, 16, 16 + fileNameLength));    // decode file name
+                                System.out.println("Receiver: fileName length: " + fileNameLength + ", fileName:" + fileName);
+
+                                receiving_something = true;
+
+                                // create file
+                                File file = new File(path + fileName);
+                                if (! file.exists()) file.createNewFile();
+
+                                // init fos
+                                fos = new FileOutputStream(file);
+
+                                // write initial data to fos
+                                fos.write(in_data, 16 + fileNameLength, in_pkt.getLength() - 16 - fileNameLength);
+                            }
+
+                            // else if not first packet write to FileOutputStream
+                            else fos.write(in_data, 12, in_pkt.getLength() - 12);
+
+                            nextSeqNum++;            // update nextSeqNum
+                            prevSeqNum = seqNum;    // update prevSeqNum
                         }
-                        // else send ack
-                        else{
-                            byte[] ackPkt = generatePacket(seqNum);
+
+                        // if out of order packet received, send duplicate ack
+                        else {
+                            byte[] ackPkt = generatePacket(prevSeqNum);
                             sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
-                            System.out.println("Receiver: Sent Ack " + seqNum);
+                            System.out.println("Receiver: Sent duplicate Ack " + prevSeqNum);
                         }
-
-                        // if first packet of transfer
-                        if (seqNum==0 && prevSeqNum==-1){
-                            int fileNameLength = ByteBuffer.wrap(copyOfRange(in_data, 12, 16)).getInt();	// 0-8:checksum, 8-12:seqnum
-                            String fileName = new String(copyOfRange(in_data, 16, 16 + fileNameLength));	// decode file name
-                            System.out.println("Receiver: fileName length: " + fileNameLength + ", fileName:" + fileName);
-
-                            receiving_something = true;
-
-                            // create file
-                            File file = new File(path + fileName);
-                            if (!file.exists()) file.createNewFile();
-
-                            // init fos
-                            fos = new FileOutputStream(file);
-
-                            // write initial data to fos
-                            fos.write(in_data, 16 + fileNameLength, in_pkt.getLength() - 16 - fileNameLength);
-                        }
-
-                        // else if not first packet write to FileOutputStream
-                        else fos.write(in_data, 12, in_pkt.getLength() - 12);
-
-                        nextSeqNum ++; 			// update nextSeqNum
-                        prevSeqNum = seqNum;	// update prevSeqNum
                     }
 
-                    // if out of order packet received, send duplicate ack
-                    else{
+                    // else packet is corrupted
+                    else {
+                        System.out.println("Receiver: Corrupt packet dropped");
                         byte[] ackPkt = generatePacket(prevSeqNum);
                         sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
                         System.out.println("Receiver: Sent duplicate Ack " + prevSeqNum);
                     }
-                }
-
-                // else packet is corrupted
-                else{
-                    System.out.println("Receiver: Corrupt packet dropped");
-                    byte[] ackPkt = generatePacket(prevSeqNum);
-                    sk3.send(new DatagramPacket(ackPkt, ackPkt.length, dst_addr, receiverPort));
-                    System.out.println("Receiver: Sent duplicate Ack " + prevSeqNum);
+                } catch (NegativeArraySizeException e1){
+                    e1.printStackTrace();
                 }
             }
             if (fos != null) fos.close();
