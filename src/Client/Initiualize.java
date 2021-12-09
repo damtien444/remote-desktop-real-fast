@@ -605,6 +605,20 @@ public class Initiualize extends JFrame implements Runnable{
     void sendACK2Partner(DatagramSocket sk, InetAddress pn_address, int pn_port) throws IOException {
         DatagramPacket seP = new DatagramPacket("ACK".getBytes(), "ACK".length(), pn_address, pn_port);
         sk.send(seP);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true){
+                    try {
+                        sk.send(seP);
+                        Thread.sleep(1000);
+                    } catch (IOException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
 }
