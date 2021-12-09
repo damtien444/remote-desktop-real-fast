@@ -311,14 +311,14 @@ class XulyClient extends Thread {
                                                                     partner.skInScreenReceivePort[0]+":"+
                                                                     partner.skInSlaveKeyAndMousePort[0]+":"+
                                                                     partner.screen.width+"~"+partner.screen.height);
-                        System.out.println("ACCEPT-EXCHANGE:"+   partner.IP[0]+":"+
-                                partner.skInSenderFilePort[0]+":"+
-                                partner.skInReceiverFilePort[0]+":"+
-                                partner.skOutSenderFilePort[0]+":"+
-                                partner.skOutReceiverFilePort[0]+":"+
-                                partner.skInChatPort[0]+":"+
-                                partner.skInScreenReceivePort[0]+":"+
-                                partner.skInSlaveKeyAndMousePort[0]+":"+
+                        System.out.println("ACCEPT-EXCHANGE:"+ Arrays.toString(partner.IP) +":"+
+                                Arrays.toString(partner.skInSenderFilePort) +":"+
+                                Arrays.toString(partner.skInReceiverFilePort) +":"+
+                                Arrays.toString(partner.skOutSenderFilePort) +":"+
+                                Arrays.toString(partner.skOutReceiverFilePort) +":"+
+                                Arrays.toString(partner.skInChatPort) +":"+
+                                Arrays.toString(partner.skInScreenReceivePort) +":"+
+                                Arrays.toString(partner.skInSlaveKeyAndMousePort) +":"+
                                 partner.screen.width+"~"+partner.screen.height);
 
                         // TODO gửi địa chỉ, mọi cổng của partner, cho slave
@@ -332,14 +332,14 @@ class XulyClient extends Thread {
                                                                     this.skInSlaveKeyAndMousePort[0]+":"+
                                                                     this.screen.width+"~"+this.screen.height);
 
-                        System.out.println("SEND-SCREEN-TO:" +this.IP[0]+":"+
-                                this.skInSenderFilePort[0]+":"+
-                                this.skInReceiverFilePort[0]+":"+
-                                this.skOutSenderFilePort[0]+":"+
-                                this.skOutReceiverFilePort[0]+":"+
-                                this.skInChatPort[0]+":"+
-                                this.skInScreenReceivePort[0]+":"+
-                                this.skInSlaveKeyAndMousePort[0]+":"+
+                        System.out.println("SEND-SCREEN-TO:" + Arrays.toString(this.IP) +":"+
+                                Arrays.toString(this.skInSenderFilePort) +":"+
+                                Arrays.toString(this.skInReceiverFilePort) +":"+
+                                Arrays.toString(this.skOutSenderFilePort) +":"+
+                                Arrays.toString(this.skOutReceiverFilePort) +":"+
+                                Arrays.toString(this.skInChatPort) +":"+
+                                Arrays.toString(this.skInScreenReceivePort) +":"+
+                                Arrays.toString(this.skInSlaveKeyAndMousePort) +":"+
                                 this.screen.width+"~"+this.screen.height);
 
                         // TODO đánh dấu cả hai đều bận

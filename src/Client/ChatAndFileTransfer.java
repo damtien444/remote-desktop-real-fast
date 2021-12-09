@@ -192,9 +192,11 @@ public class ChatAndFileTransfer extends JFrame implements Runnable{
             DatagramPacket receiver = new DatagramPacket(data, data.length);
             try {
 
+
+                this.skInChat.receive(receiver);
+
                 String raw = new String(receiver.getData());
                 if (raw.trim().equals("ACK")) continue;
-                this.skInChat.receive(receiver);
                 chatHistory = chatHistory + "\nPARTNER: "+ new String(receiver.getData()).substring(0, receiver.getLength());
                 this.MessageHistory.setText(chatHistory);
             } catch (IOException e) {
