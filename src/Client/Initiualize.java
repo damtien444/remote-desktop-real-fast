@@ -199,13 +199,13 @@ public class Initiualize extends JFrame implements Runnable{
 
                             // TODO: đăng ký với mọi port đó
 
-                            sendACK2Partner(skInSenderFile, partner_address, partner_receiver_out_port);
-                            sendACK2Partner(skOutSenderFile, partner_address, partner_receiver_in_port);
-                            sendACK2Partner(skInReceiverFile, partner_address, partner_sender_out_port);
-                            sendACK2Partner(skOutReceiverFile, partner_address, partner_sender_in_port);
-                            sendACK2Partner(skChat, partner_address, partner_chat_in_port);
-                            sendACK2Partner(skScreen, partner_address, partner_screen_receive_port);
-                            sendACK2Partner(skMouse, partner_address, partner_slave_mouse_key_port);
+                            sendACK2Partner(skInSenderFile, partner_address, partner_receiver_out_port, false);
+                            sendACK2Partner(skOutSenderFile, partner_address, partner_receiver_in_port, false);
+                            sendACK2Partner(skInReceiverFile, partner_address, partner_sender_out_port, false);
+                            sendACK2Partner(skOutReceiverFile, partner_address, partner_sender_in_port, false);
+                            sendACK2Partner(skChat, partner_address, partner_chat_in_port, true);
+                            sendACK2Partner(skScreen, partner_address, partner_screen_receive_port, false);
+                            sendACK2Partner(skMouse, partner_address, partner_slave_mouse_key_port, true);
 
 
                             System.out.println(msg);
@@ -453,13 +453,13 @@ public class Initiualize extends JFrame implements Runnable{
                 String[] dim = token[9].trim().split("~");
                 this.partner_screen = new Dimension(Integer.parseInt(dim[0]), Integer.parseInt(dim[1]));
 
-                sendACK2Partner(skInSenderFile, partner_address, partner_receiver_out_port);
-                sendACK2Partner(skOutSenderFile, partner_address, partner_receiver_in_port);
-                sendACK2Partner(skInReceiverFile, partner_address, partner_sender_out_port);
-                sendACK2Partner(skOutReceiverFile, partner_address, partner_sender_in_port);
-                sendACK2Partner(skChat, partner_address, partner_chat_in_port);
-                sendACK2Partner(skScreen, partner_address, partner_screen_receive_port);
-                sendACK2Partner(skMouse, partner_address, partner_slave_mouse_key_port);
+                sendACK2Partner(skInSenderFile, partner_address, partner_receiver_out_port, false);
+                sendACK2Partner(skOutSenderFile, partner_address, partner_receiver_in_port, false);
+                sendACK2Partner(skInReceiverFile, partner_address, partner_sender_out_port, false);
+                sendACK2Partner(skOutReceiverFile, partner_address, partner_sender_in_port, false);
+                sendACK2Partner(skChat, partner_address, partner_chat_in_port, true);
+                sendACK2Partner(skScreen, partner_address, partner_screen_receive_port, false);
+                sendACK2Partner(skMouse, partner_address, partner_slave_mouse_key_port, true);
 
 
                 System.out.println(msg.trim());
@@ -602,14 +602,13 @@ public class Initiualize extends JFrame implements Runnable{
         }
     }
 
-    void sendACK2Partner(DatagramSocket sk, InetAddress pn_address, int pn_port) throws IOException {
+    void sendACK2Partner(DatagramSocket sk, InetAddress pn_address, int pn_port, boolean is_keep_alive) throws IOException {
         DatagramPacket seP = new DatagramPacket("ACK".getBytes(), "ACK".length(), pn_address, pn_port);
         sk.send(seP);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true){
+        if (is_keep_alive) {
+            new Thread(() -> {
+                while (true) {
                     try {
                         sk.send(seP);
                         Thread.sleep(1000);
@@ -617,8 +616,8 @@ public class Initiualize extends JFrame implements Runnable{
                         e.printStackTrace();
                     }
                 }
-            }
-        }).start();
+            }).start();
+        }
     }
 
 }

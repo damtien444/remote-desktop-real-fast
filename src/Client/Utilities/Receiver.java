@@ -48,13 +48,17 @@ public class Receiver {
             if (!filePath.exists()) filePath.mkdir();
 
             // listen on sk2_dst_port
-            while (!isTransferComplete) {
+loop:       while (!isTransferComplete) {
                 // receive packet
                 sk2.receive(in_pkt);
 
                 String raw = new String(in_pkt.getData());
 
-                if (raw.trim().equals("ACK")) continue;
+                if (raw.trim().equals("ACK")) {
+                    System.out.println("Ack receive");
+                    continue loop;
+                }
+
 
                 byte[] received_checksum = copyOfRange(in_data, 0, 8);
                 CRC32 checksum = new CRC32();

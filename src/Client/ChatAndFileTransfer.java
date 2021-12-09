@@ -197,6 +197,7 @@ public class ChatAndFileTransfer extends JFrame implements Runnable{
 
                 String raw = new String(receiver.getData());
                 if (raw.trim().equals("ACK")) continue;
+
                 chatHistory = chatHistory + "\nPARTNER: "+ new String(receiver.getData()).substring(0, receiver.getLength());
                 this.MessageHistory.setText(chatHistory);
             } catch (IOException e) {
