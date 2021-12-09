@@ -199,12 +199,12 @@ public class Initiualize extends JFrame implements Runnable{
 
                             // TODO: đăng ký với mọi port đó
 
-                            sendACK2Partner(skInSenderFile, partner_address, partner_receiver_out_port, false);
-                            sendACK2Partner(skOutSenderFile, partner_address, partner_receiver_in_port, false);
-                            sendACK2Partner(skInReceiverFile, partner_address, partner_sender_out_port, false);
-                            sendACK2Partner(skOutReceiverFile, partner_address, partner_sender_in_port, false);
+                            sendACK2Partner(skInSenderFile, partner_address, partner_receiver_out_port, true);
+                            sendACK2Partner(skOutSenderFile, partner_address, partner_receiver_in_port, true);
+                            sendACK2Partner(skInReceiverFile, partner_address, partner_sender_out_port, true);
+                            sendACK2Partner(skOutReceiverFile, partner_address, partner_sender_in_port, true);
                             sendACK2Partner(skChat, partner_address, partner_chat_in_port, true);
-                            sendACK2Partner(skScreen, partner_address, partner_screen_receive_port, false);
+                            sendACK2Partner(skScreen, partner_address, partner_screen_receive_port, true);
                             sendACK2Partner(skMouse, partner_address, partner_slave_mouse_key_port, true);
 
 
@@ -453,12 +453,12 @@ public class Initiualize extends JFrame implements Runnable{
                 String[] dim = token[9].trim().split("~");
                 this.partner_screen = new Dimension(Integer.parseInt(dim[0]), Integer.parseInt(dim[1]));
 
-                sendACK2Partner(skInSenderFile, partner_address, partner_receiver_out_port, false);
-                sendACK2Partner(skOutSenderFile, partner_address, partner_receiver_in_port, false);
-                sendACK2Partner(skInReceiverFile, partner_address, partner_sender_out_port, false);
-                sendACK2Partner(skOutReceiverFile, partner_address, partner_sender_in_port, false);
+                sendACK2Partner(skInSenderFile, partner_address, partner_receiver_out_port, true);
+                sendACK2Partner(skOutSenderFile, partner_address, partner_receiver_in_port, true);
+                sendACK2Partner(skInReceiverFile, partner_address, partner_sender_out_port, true);
+                sendACK2Partner(skOutReceiverFile, partner_address, partner_sender_in_port, true);
                 sendACK2Partner(skChat, partner_address, partner_chat_in_port, true);
-                sendACK2Partner(skScreen, partner_address, partner_screen_receive_port, false);
+                sendACK2Partner(skScreen, partner_address, partner_screen_receive_port, true);
                 sendACK2Partner(skMouse, partner_address, partner_slave_mouse_key_port, true);
 
 
